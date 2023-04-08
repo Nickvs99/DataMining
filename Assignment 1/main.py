@@ -17,6 +17,8 @@ def main():
     show_numerical_stats(df, numerical_df)
     show_categorical_stats(categorical_df)
 
+    show_correlation_matrix(df)
+
 def set_df_types(df):
 
     numeric_columns = [
@@ -96,7 +98,7 @@ def get_categorical_df(df):
 def show_basic_stats(df):
 
     print_header("Basic stats")
-    print(df.transpose())
+    print_df(df.transpose())
 
     n_invalids = [df[column]["n_invalid"] for column in df.columns]
     labels = list(df.columns)
@@ -110,7 +112,7 @@ def show_basic_stats(df):
 def show_numerical_stats(df, numerical_df):
 
     print_header("Numerical stats")
-    print(numerical_df.transpose())
+    print_df(numerical_df.transpose())
 
     numerical_columns = df.select_dtypes(include=np.number)
 
@@ -129,15 +131,9 @@ def show_numerical_stats(df, numerical_df):
 
 def show_categorical_stats(df):
 
-    
-    # Temporarily remove the max column width limit to print all output
-    pd.set_option('display.max_colwidth', None)
-    
     print_header("Categorical stat")
-    print(df.transpose())
+    print_df(df.transpose())
     
-    pd.reset_option('display.max_colwidth')
-
     for column in df:
 
         category_frequencies = df[column].category_frequencies
@@ -149,11 +145,40 @@ def show_categorical_stats(df):
         plt.title(column)
         plt.show()
 
+def print_df(df):
+    with pd.option_context('display.max_colwidth', None):
+        print(df)
+
 def print_header(header, char="="):
 
     print("\n")
     print(f"{char*10} {header} {char*(120 - len(header))}")
     print()
+
+def show_correlation_matrix(df):
+    
+    # Convert all categorical data to numerical data
+    # https://stackoverflow.com/a/32011969/12132063
+    categorical_columns = df.select_dtypes(['category']).columns
+    df[categorical_columns] = df[categorical_columns].apply(lambda x: x.cat.codes)
+
+    # Calculate the correlation matrix, for some reason method="pearson" does not give a matrix with one's on the diagonal
+    correlation_matrix = df.corr(method="kendall", numeric_only=True)
+
+    print_header("Correlation matrix")
+    print_df(correlation_matrix)
+
+    plt.matshow(correlation_matrix)
+    
+    plt.title("Correlation matrix")
+
+    tick_locations = range(len(correlation_matrix.columns.values))
+    plt.xticks(tick_locations, correlation_matrix.columns.values)
+    plt.yticks(tick_locations, correlation_matrix.columns.values)
+
+    plt.colorbar()
+    plt.show()
+
 
 if __name__ == "__main__":
     main()
