@@ -7,17 +7,19 @@ def main():
     
     df = pd.read_csv("data.csv", sep=";")
 
-    df = set_df_types(df)
+    set_df_types(df)
+    column_name_map = update_column_names(df)
 
     basic_df = get_basic_df(df)
     numerical_df = get_numerical_df(df)
     categorical_df = get_categorical_df(df)
 
     show_basic_stats(basic_df)
-    show_numerical_stats(df, numerical_df)
-    show_categorical_stats(categorical_df)
+    show_numerical_stats(df, numerical_df, column_name_map)
+    show_categorical_stats(categorical_df, column_name_map)
 
     show_correlation_matrix(df)
+
 
 def set_df_types(df):
 
@@ -45,6 +47,38 @@ def set_df_types(df):
     
     return df
 
+
+def update_column_names(df):
+
+    column_names = [
+        "Timestamp",
+        "Program",
+        "Machine learning",
+        "Information retrieval",
+        "Statistics",
+        "Databases",
+        "Gender",
+        "ChatGPT",
+        "Birthday",
+        "Students estimate",
+        "Stand up",
+        "Stress level",
+        "Sport duration",
+        "Random number",
+        "Bedtime",
+        "Good day (#1)",
+        "Good day (#2)",
+    ]
+
+    # Creates a dictionary which maps the shortened column name to it's longer version
+    # e.g. Program --> What programme are you in?
+    column_name_map = dict(zip(column_names, df.columns))
+    
+    df.columns = column_names
+
+    return column_name_map
+
+
 def get_basic_df(df):
 
     def n_invalid(series):
@@ -60,6 +94,7 @@ def get_basic_df(df):
         return series.value_counts().max()
 
     return df.agg(["dtype", "size", n_invalid,  percentage_valid, "nunique", most_frequent_value, most_frequent_count])
+
 
 def get_numerical_df(df):
 
@@ -79,6 +114,7 @@ def get_numerical_df(df):
     
     return numerical_columns.agg(["mean", "std", "min", quantile_1, quantile_25, "median", quantile_75, quantile_99, "max"])
 
+
 def get_categorical_df(df):
 
     def category_frequencies(series):
@@ -95,21 +131,23 @@ def get_categorical_df(df):
     
     return categorical_columns.agg([category_frequencies])
 
+
 def show_basic_stats(df):
 
     print_header("Basic stats")
     print_df(df.transpose())
 
     n_invalids = [df[column]["n_invalid"] for column in df.columns]
-    labels = list(df.columns)
 
+    labels = df.columns.values
     plt.barh(labels, n_invalids)
     plt.title("Number of invalid/missing entries")
 
     plt.tight_layout()
     plt.show()
 
-def show_numerical_stats(df, numerical_df):
+
+def show_numerical_stats(df, numerical_df, column_name_map):
 
     print_header("Numerical stats")
     print_df(numerical_df.transpose())
@@ -119,17 +157,19 @@ def show_numerical_stats(df, numerical_df):
     for column in numerical_columns:
 
         values = df[column].values
+        
         plt.hist(values, bins=50)
         plt.axvline(numerical_df[column]["mean"], label="mean", color="orange", linestyle="--")
 
-        plt.title(column)
+        plt.title(column_name_map[column])
         plt.ylabel("Frequency")
         
         plt.legend()
         
         plt.show()
 
-def show_categorical_stats(df):
+
+def show_categorical_stats(df, column_name_map):
 
     print_header("Categorical stat")
     print_df(df.transpose())
@@ -142,18 +182,21 @@ def show_categorical_stats(df):
         frequencies = [category_frequency[1] for category_frequency in category_frequencies]
 
         plt.pie(frequencies, labels=categories)
-        plt.title(column)
+        plt.title(column_name_map[column])
         plt.show()
+
 
 def print_df(df):
     with pd.option_context('display.max_colwidth', None):
         print(df)
+
 
 def print_header(header, char="="):
 
     print("\n")
     print(f"{char*10} {header} {char*(120 - len(header))}")
     print()
+
 
 def show_correlation_matrix(df):
     
@@ -172,11 +215,13 @@ def show_correlation_matrix(df):
     
     plt.title("Correlation matrix")
 
-    tick_locations = range(len(correlation_matrix.columns.values))
-    plt.xticks(tick_locations, correlation_matrix.columns.values)
-    plt.yticks(tick_locations, correlation_matrix.columns.values)
+    labels = correlation_matrix.columns.values
+    tick_locations = range(len(labels))
+    plt.xticks(tick_locations, labels, rotation=30, horizontalalignment="left")
+    plt.yticks(tick_locations, labels)
 
     plt.colorbar()
+    plt.tight_layout()
     plt.show()
 
 
