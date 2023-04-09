@@ -1,5 +1,5 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 
@@ -19,6 +19,9 @@ def main():
     show_categorical_stats(categorical_df, column_name_map)
 
     show_correlation_matrix(df)
+
+    plot_scatterplot(df, "Sport", "Stress level")
+    plot_boxplot(df, "Stress level", ["Machine learning", "Information retrieval", "Statistics", "Databases"])
 
 
 def set_df_types(df):
@@ -63,7 +66,7 @@ def update_column_names(df):
         "Students estimate",
         "Stand up",
         "Stress level",
-        "Sport duration",
+        "Sport",
         "Random number",
         "Bedtime",
         "Good day (#1)",
@@ -171,7 +174,7 @@ def show_numerical_stats(df, numerical_df, column_name_map):
 
 def show_categorical_stats(df, column_name_map):
 
-    print_header("Categorical stat")
+    print_header("Categorical stats")
     print_df(df.transpose())
     
     for column in df:
@@ -200,13 +203,15 @@ def print_header(header, char="="):
 
 def show_correlation_matrix(df):
     
+    df_copy = df.copy()
+
     # Convert all categorical data to numerical data
     # https://stackoverflow.com/a/32011969/12132063
-    categorical_columns = df.select_dtypes(['category']).columns
-    df[categorical_columns] = df[categorical_columns].apply(lambda x: x.cat.codes)
+    categorical_columns = df_copy.select_dtypes(['category']).columns
+    df_copy[categorical_columns] = df_copy[categorical_columns].apply(lambda x: x.cat.codes)
 
     # Calculate the correlation matrix, for some reason method="pearson" does not give a matrix with one's on the diagonal
-    correlation_matrix = df.corr(method="kendall", numeric_only=True)
+    correlation_matrix = df_copy.corr(method="kendall", numeric_only=True)
 
     print_header("Correlation matrix")
     print_df(correlation_matrix)
@@ -221,6 +226,51 @@ def show_correlation_matrix(df):
     plt.yticks(tick_locations, labels)
 
     plt.colorbar()
+
+    plt.show()
+
+def plot_scatterplot(df, index1, index2):
+
+    values1 = df[index1].values
+    values2 = df[index2].values
+    
+    plt.scatter(values1, values2)
+    
+    plt.xlabel(index1)
+    plt.ylabel(index2)
+    
+    plt.show()
+
+def plot_boxplot(df, index1, indices):
+    """
+    Creates a boxplot for multiple columns.
+    Index1 has to be a numerical column
+    Indices has to be an array of categorical columns
+    """
+
+    data = []
+    labels = []
+
+    for index in indices:
+
+        for category in df[index].cat.categories:
+
+            labels.append(f"{index} - {category}")
+
+            # Get all rows where the column value is equal to the current category
+            rows = df.loc[df[index] == category]
+            values = rows[index1].values
+            
+            # Remove nan values from the data
+            values = values[~np.isnan(values)]
+
+            data.append(values)
+
+    plt.boxplot(data, labels=labels)
+
+    plt.ylabel(index1)
+    plt.xticks(rotation=45, ha='right')
+
     plt.tight_layout()
     plt.show()
 
