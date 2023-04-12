@@ -2,45 +2,52 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from data_cleaning import clean_df
+
 
 def main():
     
     df = pd.read_csv("data.csv", sep=";")
-
-    set_df_types(df)
+    
     column_name_map = update_column_names(df)
+    set_df_types(df)
+    
+    df_clean_remove = clean_df(df, method="remove")
+    df_clean_replace = clean_df(df, method="replace")
 
-    basic_df = get_basic_df(df)
-    numerical_df = get_numerical_df(df)
-    categorical_df = get_categorical_df(df)
+    for dataframe in [df, df_clean_remove, df_clean_replace]:
+       
+        basic_df = get_basic_df(dataframe)
+        numerical_df = get_numerical_df(dataframe)
+        categorical_df = get_categorical_df(dataframe)
 
-    show_basic_stats(basic_df)
-    show_numerical_stats(df, numerical_df, column_name_map)
-    show_categorical_stats(categorical_df, column_name_map)
+        show_basic_stats(basic_df)
+        show_numerical_stats(dataframe, numerical_df, column_name_map)
+        show_categorical_stats(categorical_df, column_name_map)
 
-    show_correlation_matrix(df)
+        show_correlation_matrix(dataframe)
 
-    plot_scatterplot(df, "Sport", "Stress level")
-    plot_boxplot(df, "Stress level", ["Machine learning", "Information retrieval", "Statistics", "Databases"])
+        plot_scatterplot(dataframe, "Sport", "Stress level")
+        plot_boxplot(dataframe, "Stress level", ["Gender"])
 
 
 def set_df_types(df):
 
     numeric_columns = [
-        "How many students do you estimate there are in the room?",
-        "What is your stress level (0-100)?",
-        "How many hours per week do you do sports (in whole hours)? ",
-        "Give a random number",
+        "Students estimate",
+        "Stress level",
+        "Sport",
+        "Random number",
     ]
 
     categorical_columns = [
-        "Have you taken a course on machine learning?",
-        "Have you taken a course on information retrieval?",
-        "Have you taken a course on statistics?",
-        "Have you taken a course on databases?",
-        "What is your gender?",
-        "I have used ChatGPT to help me with some of my study assignments ",
-        "Did you stand up to come to your previous answer    ?"
+        "Machine learning",
+        "Information retrieval",
+        "Statistics",
+        "Databases",
+        "Gender",
+        "ChatGPT",
+        "Stand up"
     ]
 
     # Convert columns to a numeric value, non numeric values are set to NaN
