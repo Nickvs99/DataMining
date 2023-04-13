@@ -33,6 +33,11 @@ def remove_impossible_values(df):
             (df[column] >= lower_bound) & (df[column] <= upper_bound) , df[column], np.NaN
         )
 
+    # Remove any bedtime which does not follow the format hh:mm
+    df["Bedtime"] = np.where(
+        (df["Bedtime"].str.len() == 5) & (df["Bedtime"].str.get(2) == ":"), df["Bedtime"], np.NaN
+    )
+
 
 def remove_outliers(df, quantile=0.01):
 
