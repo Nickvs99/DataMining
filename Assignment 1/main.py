@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 from data_cleaning import clean_df
+from feature_engineering import run_feature_engineering
 
 
 def main():
@@ -11,24 +12,37 @@ def main():
     
     column_name_map = update_column_names(df)
     set_df_types(df)
-    
+
+    # Randomize order of rows, https://stackoverflow.com/a/34879805/12132063
+    # Use a random_state to have the same order between runs
+    df = df.sample(frac=1, random_state=0).reset_index(drop=True)
+
+
     df_clean_remove = clean_df(df, method="remove")
     df_clean_replace = clean_df(df, method="replace")
+    
+    # Run feature engineering on the cleaned versions
+    for dataframe in [df_clean_remove, df_clean_replace]:
+        run_feature_engineering(dataframe)
 
     for dataframe in [df, df_clean_remove, df_clean_replace]:
-       
-        basic_df = get_basic_df(dataframe)
-        numerical_df = get_numerical_df(dataframe)
-        categorical_df = get_categorical_df(dataframe)
 
-        show_basic_stats(basic_df)
-        show_numerical_stats(dataframe, numerical_df, column_name_map)
-        show_categorical_stats(categorical_df, column_name_map)
+        run_df(dataframe, column_name_map)
 
-        show_correlation_matrix(dataframe)
+def run_df(df, column_name_map):
+           
+    basic_df = get_basic_df(df)
+    numerical_df = get_numerical_df(df)
+    categorical_df = get_categorical_df(df)
 
-        plot_scatterplot(dataframe, "Sport", "Stress level")
-        plot_boxplot(dataframe, "Stress level", ["Gender"])
+    show_basic_stats(basic_df)
+    show_numerical_stats(df, numerical_df, column_name_map)
+    show_categorical_stats(categorical_df, column_name_map)
+
+    show_correlation_matrix(df)
+
+    plot_scatterplot(df, "Sport", "Stress level")
+    plot_boxplot(df, "Stress level", ["Gender"])
 
 
 def set_df_types(df):
@@ -171,7 +185,7 @@ def show_numerical_stats(df, numerical_df, column_name_map):
         plt.hist(values, bins=50)
         plt.axvline(numerical_df[column]["mean"], label="mean", color="orange", linestyle="--")
 
-        plt.title(column_name_map[column])
+        plt.title(column_name_map[column] if column in column_name_map else column)
         plt.ylabel("Frequency")
         
         plt.legend()
@@ -192,7 +206,7 @@ def show_categorical_stats(df, column_name_map):
         frequencies = [category_frequency[1] for category_frequency in category_frequencies]
 
         plt.pie(frequencies, labels=categories)
-        plt.title(column_name_map[column])
+        plt.title(column_name_map[column] if column in column_name_map else column)
         plt.show()
 
 
