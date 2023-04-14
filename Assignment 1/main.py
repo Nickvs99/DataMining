@@ -4,6 +4,7 @@ import pandas as pd
 
 from data_cleaning import clean_df
 from feature_engineering import run_feature_engineering
+from knn import knn
 
 
 def main():
@@ -30,6 +31,7 @@ def main():
     #     run_df(dataframe, column_name_map)
 
     df = drop_columns(df_clean_remove, "Timestamp", "Program", "Machine learning", "Information retrieval", "Statistics", "Databases", "Birthday", "Bedtime", "Good day (#1)", "Good day (#2)", "Bedtime - hour")
+    normalize_df(df)
 
     n_rows = len(df.index)
 
@@ -38,6 +40,17 @@ def main():
 
     test_df = df[:n_test_rows]
     other_df = df[n_test_rows:]
+    
+    validation_frac = 1/5
+    n_validation_rows = int(len(other_df.index) * validation_frac)
+
+    validation_df = other_df[:n_validation_rows]
+    training_df = other_df[n_validation_rows:]
+
+    for k in range(1, 10):
+        
+        score = knn("Sleep level", training_df, validation_df, k=k)
+        print(f"k={k}, predication accuracy: {score}")
 
 
 def run_df(df, column_name_map):
@@ -112,6 +125,20 @@ def update_column_names(df):
     df.columns = column_names
 
     return column_name_map
+
+def normalize_df(df):
+    """
+    Normalizes the numerical columns. 
+    Currently, the values are divided by the max value.
+    Another possibility is to also shift the values such that the minvalue is 0
+    """
+
+    numerical_columns = df.select_dtypes(include=np.number)
+    for column in numerical_columns:
+
+        max_value = df[column].max()
+
+        df[column] /= max_value
 
 
 def drop_columns(df, *columns):
