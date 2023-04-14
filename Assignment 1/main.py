@@ -4,7 +4,9 @@ import pandas as pd
 
 from data_cleaning import clean_df
 from feature_engineering import run_feature_engineering
-from knn import knn
+
+from evaluators.category_evaluator import CategoryEvaluator
+from predictors.knn_predictor import KnnPredictor
 
 
 def main():
@@ -30,7 +32,11 @@ def main():
     # for dataframe in [df, df_clean_remove, df_clean_replace]:
     #     run_df(dataframe, column_name_map)
 
-    df = drop_columns(df_clean_remove, "Timestamp", "Program", "Machine learning", "Information retrieval", "Statistics", "Databases", "Birthday", "Bedtime", "Good day (#1)", "Good day (#2)", "Bedtime - hour")
+    df = drop_columns(df_clean_remove, "Timestamp", "Program", "Machine learning", "Information retrieval", "Statistics", "Databases", "Birthday", "Bedtime", "Good day (#1)", "Good day (#2)", "Bedtime - hour",
+            
+            # The following columns reduce the prediction accuracy, but are in a usable state
+            "Random number", "Stand up", "ChatGPT", "Students estimate", "Sleep level", "Experience")
+
     normalize_df(df)
 
     n_rows = len(df.index)
@@ -48,8 +54,10 @@ def main():
     training_df = other_df[n_validation_rows:]
 
     for k in range(1, 10):
-        
-        score = knn("Sleep level", training_df, validation_df, k=k)
+
+        predictor = KnnPredictor("Gender", training_df, k=k, n=2)
+        evaluator = CategoryEvaluator("Gender", predictor, validation_df)
+        score = evaluator.evalutate()
         print(f"k={k}, predication accuracy: {score}")
 
 
