@@ -25,9 +25,20 @@ def main():
     for dataframe in [df_clean_remove, df_clean_replace]:
         run_feature_engineering(dataframe)
 
-    for dataframe in [df, df_clean_remove, df_clean_replace]:
+    # # Get basic data plots
+    # for dataframe in [df, df_clean_remove, df_clean_replace]:
+    #     run_df(dataframe, column_name_map)
 
-        run_df(dataframe, column_name_map)
+    df = drop_columns(df_clean_remove, "Timestamp", "Program", "Machine learning", "Information retrieval", "Statistics", "Databases", "Birthday", "Bedtime", "Good day (#1)", "Good day (#2)", "Bedtime - hour")
+
+    n_rows = len(df.index)
+
+    test_fraction = 1/3
+    n_test_rows = int(n_rows * test_fraction)
+
+    test_df = df[:n_test_rows]
+    other_df = df[n_test_rows:]
+
 
 def run_df(df, column_name_map):
            
@@ -101,6 +112,11 @@ def update_column_names(df):
     df.columns = column_names
 
     return column_name_map
+
+
+def drop_columns(df, *columns):
+    
+    return df.drop(columns = list(columns))
 
 
 def get_basic_df(df):
