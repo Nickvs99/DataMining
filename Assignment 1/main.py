@@ -6,8 +6,11 @@ from data_cleaning import clean_df
 from feature_engineering import run_feature_engineering
 
 from evaluators.category_evaluator import CategoryEvaluator
+
 from predictors.knn_predictor import KnnPredictor
 from predictors.naive_bayes_predictor   import NaiveBayesPredictor
+
+from validators.basic_validator import BasicValidator
 
 
 def main():
@@ -59,10 +62,11 @@ def main():
 
         predictor = NaiveBayesPredictor(target, n_category_bins=n_bins)
         # predictor = KnnPredictor(target, k=k, n=2)
-        predictor.train(training_df)
     
         evaluator = CategoryEvaluator(target, predictor)
-        score = evaluator.evalutate(validation_df)
+
+        validator = BasicValidator(other_df, evaluator, predictor)
+        score, _ = validator.validate()
         
         print(f"n={n_bins}, predication accuracy: {score}")
 

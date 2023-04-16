@@ -7,7 +7,7 @@ class Evaluator:
         self.target = target
         self.predictor = predictor
         
-    def evalutate(self, test_df):
+    def evaluate(self, test_df):
         
         self.test_df = test_df
 

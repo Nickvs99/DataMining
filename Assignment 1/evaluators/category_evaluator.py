@@ -5,8 +5,8 @@ class CategoryEvaluator(Evaluator):
     def __init__(self, target, predictor):
         super().__init__(target, predictor)
 
-    def evalutate(self, test_df):
-        super().evalutate(test_df)
+    def evaluate(self, test_df):
+        super().evaluate(test_df)
 
         if not test_df[self.target].dtype.name == 'category':
             raise Exception(f"{self.target} is not a categorical column.")
