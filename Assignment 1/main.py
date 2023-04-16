@@ -7,6 +7,7 @@ from feature_engineering import run_feature_engineering
 
 from evaluators.category_evaluator import CategoryEvaluator
 from predictors.knn_predictor import KnnPredictor
+from predictors.naive_bayes_predictor   import NaiveBayesPredictor
 
 
 def main():
@@ -32,10 +33,8 @@ def main():
     # for dataframe in [df, df_clean_remove, df_clean_replace]:
     #     run_df(dataframe, column_name_map)
 
-    df = drop_columns(df_clean_remove, "Timestamp", "Program", "Machine learning", "Information retrieval", "Statistics", "Databases", "Birthday", "Bedtime", "Good day (#1)", "Good day (#2)", "Bedtime - hour",
-            
-            # The following columns reduce the prediction accuracy, but are in a usable state
-            "Random number", "Stand up", "ChatGPT", "Students estimate", "Sleep level", "Experience")
+    # Only keep these columns
+    df = df_clean_remove[["Gender", "Stress level", "Sport"]].copy()
 
     normalize_df(df)
 
@@ -53,12 +52,18 @@ def main():
     validation_df = other_df[:n_validation_rows]
     training_df = other_df[n_validation_rows:]
 
-    for k in range(1, 10):
 
-        predictor = KnnPredictor("Gender", training_df, k=k, n=2)
-        evaluator = CategoryEvaluator("Gender", predictor, validation_df)
+    target = "Gender"
+    
+    for n_bins in range(1, 10):
+
+        predictor = NaiveBayesPredictor(target, training_df, n_category_bins=n_bins)
+        # predictor = KnnPredictor(target, training_df, k=10, n=2)
+    
+        evaluator = CategoryEvaluator(target, predictor, validation_df)
         score = evaluator.evalutate()
-        print(f"k={k}, predication accuracy: {score}")
+        
+        print(f"n={n_bins}, predication accuracy: {score}")
 
 
 def run_df(df, column_name_map):
@@ -147,11 +152,6 @@ def normalize_df(df):
         max_value = df[column].max()
 
         df[column] /= max_value
-
-
-def drop_columns(df, *columns):
-    
-    return df.drop(columns = list(columns))
 
 
 def get_basic_df(df):
