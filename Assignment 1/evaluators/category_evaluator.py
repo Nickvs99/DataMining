@@ -2,14 +2,14 @@ from evaluators.evaluator import Evaluator
 
 class CategoryEvaluator(Evaluator):
 
-    def __init__(self, target, predictor, test_df):
-        
-        super().__init__(target, predictor, test_df)
+    def __init__(self, target, predictor):
+        super().__init__(target, predictor)
 
-        if not test_df[target].dtype.name == 'category':
-            raise Exception(f"{target} is not a categorical column.")
+    def evalutate(self, test_df):
+        super().evalutate(test_df)
 
-    def evalutate(self):
+        if not test_df[self.target].dtype.name == 'category':
+            raise Exception(f"{self.target} is not a categorical column.")
 
         correct_predictions = 0
         for i in range(len(self.test_df.index)):

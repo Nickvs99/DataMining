@@ -61,8 +61,8 @@ def main():
         # predictor = KnnPredictor(target, k=k, n=2)
         predictor.train(training_df)
     
-        evaluator = CategoryEvaluator(target, predictor, validation_df)
-        score = evaluator.evalutate()
+        evaluator = CategoryEvaluator(target, predictor)
+        score = evaluator.evalutate(validation_df)
         
         print(f"n={n_bins}, predication accuracy: {score}")
 
