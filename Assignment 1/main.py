@@ -88,6 +88,8 @@ def run_df(df, column_name_map):
     plot_scatterplot(df, "Sport", "Stress level")
     plot_boxplot(df, "Stress level", ["Gender"])
 
+    plot_stress_sport_gender(df)
+
 
 def set_df_types(df):
 
@@ -351,6 +353,27 @@ def plot_boxplot(df, index1, indices):
     plt.xticks(rotation=45, ha='right')
 
     plt.tight_layout()
+    plt.show()
+
+def plot_stress_sport_gender(df):
+
+    stress_values = df["Stress level"].values
+    sport_values = df["Sport"].values
+    gender_values = df["Gender"].values
+
+    cdict = {"female": 'magenta', "male": 'blue', "gender fluid": "yellow"}
+
+
+    # fig, ax = plt.subplots()
+    for gender in np.unique(gender_values):
+        ix = np.where(gender_values == gender)
+        color = cdict[gender] if gender in cdict else None
+        plt.scatter(sport_values[ix], stress_values[ix], label=gender, c=color)
+    
+    plt.xlabel("Sport")
+    plt.ylabel("Stress level")
+    
+    plt.legend()
     plt.show()
 
 
