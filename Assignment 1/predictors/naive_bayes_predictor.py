@@ -8,13 +8,17 @@ from predictors.category_predictor import CategoryPredictor
 
 class NaiveBayesPredictor(CategoryPredictor):
 
-    def __init__(self, target, training_df, n_category_bins=5):
+    def __init__(self, target, n_category_bins=5):
 
-        # Create a copy of the training_df, since NB needs adjustments to make
-        # the algorithm work. Numerical columns have to be converted to categorical
-        super().__init__(target, training_df.copy())
+        super().__init__(target)
 
         self.n_category_bins = n_category_bins
+
+    def train(self, training_df):
+        
+        # Create a copy of the training_df, since NB needs adjustments to make
+        # the algorithm work. Numerical columns have to be converted to categorical
+        super().train(training_df.copy())
 
         # Convert numerical columns to categorical
         self.category_treshold_df = self.get_category_treshold_df()

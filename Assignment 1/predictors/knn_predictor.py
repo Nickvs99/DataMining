@@ -6,8 +6,8 @@ from predictors.category_predictor import CategoryPredictor
 
 class KnnPredictor(CategoryPredictor):
 
-    def __init__(self, target, training_df, k=5, n=2):
-        super().__init__(target, training_df)
+    def __init__(self, target, k=5, n=2):
+        super().__init__(target)
 
         self.k = k
         self.n = n

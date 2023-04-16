@@ -57,8 +57,9 @@ def main():
     
     for n_bins in range(1, 10):
 
-        predictor = NaiveBayesPredictor(target, training_df, n_category_bins=n_bins)
-        # predictor = KnnPredictor(target, training_df, k=10, n=2)
+        predictor = NaiveBayesPredictor(target, n_category_bins=n_bins)
+        # predictor = KnnPredictor(target, k=k, n=2)
+        predictor.train(training_df)
     
         evaluator = CategoryEvaluator(target, predictor, validation_df)
         score = evaluator.evalutate()
