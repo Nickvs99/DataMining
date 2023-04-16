@@ -11,6 +11,7 @@ from predictors.knn_predictor import KnnPredictor
 from predictors.naive_bayes_predictor   import NaiveBayesPredictor
 
 from validators.basic_validator import BasicValidator
+from validators.k_fold_validator import KFoldValidator
 
 
 def main():
@@ -58,17 +59,18 @@ def main():
 
     target = "Gender"
     
-    for n_bins in range(1, 10):
+    for k_folds in range(2, 20):
 
-        predictor = NaiveBayesPredictor(target, n_category_bins=n_bins)
+        predictor = NaiveBayesPredictor(target, n_category_bins=5)
         # predictor = KnnPredictor(target, k=k, n=2)
     
         evaluator = CategoryEvaluator(target, predictor)
 
-        validator = BasicValidator(other_df, evaluator, predictor)
-        score, _ = validator.validate()
+        # validator = BasicValidator(other_df, evaluator, predictor, validate_fraction=0.2)
+        validator = KFoldValidator(df, evaluator, predictor, n_folds=k_folds)
+        score, stddev = validator.validate()
         
-        print(f"n={n_bins}, predication accuracy: {score}")
+        print(f"k={k_folds}, predication accuracy: {score} +- {stddev}")
 
 
 def run_df(df, column_name_map):
