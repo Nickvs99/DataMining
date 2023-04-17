@@ -25,7 +25,6 @@ def main():
     # Use a random_state to have the same order between runs
     df = df.sample(frac=1, random_state=0).reset_index(drop=True)
 
-
     df_clean_remove = clean_df(df, method="remove")
     df_clean_replace = clean_df(df, method="replace")
     
@@ -33,12 +32,14 @@ def main():
     for dataframe in [df_clean_remove, df_clean_replace]:
         run_feature_engineering(dataframe)
 
-    # # Get basic data plots
-    # for dataframe in [df, df_clean_remove, df_clean_replace]:
-    #     run_df(dataframe, column_name_map)
+    # # Get basic data plots and tables
+    # save_suffixs = ["dirty", "remove", "replace"]
+    # dfs = [df, df_clean_remove, df_clean_replace]
+    # for dataframe, save_suffix in zip(dfs, save_suffixs):
+    #     run_df(dataframe, column_name_map, save_suffix=save_suffix)
 
     # Only keep these columns
-    df = df_clean_remove[["Gender", "Stress level", "Sport"]].copy()
+    df = df_clean_replace[["Gender", "Stress level", "Sport"]].copy()
 
     normalize_df(df)
 
@@ -50,15 +51,7 @@ def main():
     test_df = df[:n_test_rows]
     other_df = df[n_test_rows:]
     
-    validation_frac = 1/5
-    n_validation_rows = int(len(other_df.index) * validation_frac)
-
-    validation_df = other_df[:n_validation_rows]
-    training_df = other_df[n_validation_rows:]
-
-
     target = "Gender"
-    
     for k_folds in range(2, 20):
 
         predictor = NaiveBayesPredictor(target, n_category_bins=5)
@@ -68,27 +61,27 @@ def main():
 
         # validator = BasicValidator(other_df, evaluator, predictor, validate_fraction=0.2)
         validator = KFoldValidator(df, evaluator, predictor, n_folds=k_folds)
-        score, stddev = validator.validate()
+        score, std_error = validator.validate()
         
-        print(f"k={k_folds}, predication accuracy: {score} +- {stddev}")
+        print(f"k={k_folds}, predication accuracy: {score} +- {std_error}")
 
 
-def run_df(df, column_name_map):
+def run_df(df, column_name_map, save_suffix=""):
            
     basic_df = get_basic_df(df)
     numerical_df = get_numerical_df(df)
     categorical_df = get_categorical_df(df)
 
-    show_basic_stats(basic_df)
-    show_numerical_stats(df, numerical_df, column_name_map)
-    show_categorical_stats(categorical_df, column_name_map)
+    show_basic_stats(basic_df, save_suffix=save_suffix)
+    show_numerical_stats(df, numerical_df, column_name_map, save_suffix=save_suffix)
+    show_categorical_stats(categorical_df, column_name_map, save_suffix=save_suffix)
 
-    show_correlation_matrix(df)
+    show_correlation_matrix(df, save_filename=f"correlation_{save_suffix}")
 
-    plot_scatterplot(df, "Sport", "Stress level")
-    plot_boxplot(df, "Stress level", ["Gender"])
+    plot_scatterplot(df, "Sport", "Stress level", save_filename=f"scatter_sport_stress_{save_suffix}")
+    plot_boxplot(df, "Stress level", ["Gender"], save_filename=f"boxplot_stress_gender_{save_suffix}")
 
-    plot_stress_sport_gender(df)
+    plot_stress_sport_gender(df, save_suffix=save_suffix)
 
 
 def set_df_types(df):
@@ -216,10 +209,11 @@ def get_categorical_df(df):
     return categorical_columns.agg([category_frequencies])
 
 
-def show_basic_stats(df):
+def show_basic_stats(df, save_suffix=""):
 
     print_header("Basic stats")
     print_df(df.transpose())
+    save_df(df.transpose(), f"tables/basic_stats_{save_suffix}.tex")
 
     n_invalids = [df[column]["n_invalid"] for column in df.columns]
 
@@ -228,13 +222,15 @@ def show_basic_stats(df):
     plt.title("Number of invalid/missing entries")
 
     plt.tight_layout()
+    plt.savefig(f"figures/invalids_{save_suffix}.png", dpi=400)
     plt.show()
 
 
-def show_numerical_stats(df, numerical_df, column_name_map):
+def show_numerical_stats(df, numerical_df, column_name_map, save_suffix=""):
 
     print_header("Numerical stats")
     print_df(numerical_df.transpose())
+    save_df(numerical_df.transpose(), f"tables/numerical_stats_{save_suffix}.tex")
 
     numerical_columns = df.select_dtypes(include=np.number)
 
@@ -242,21 +238,23 @@ def show_numerical_stats(df, numerical_df, column_name_map):
 
         values = df[column].values
         
-        plt.hist(values, bins=50)
+        plt.hist(values, bins=20)
         plt.axvline(numerical_df[column]["mean"], label="mean", color="orange", linestyle="--")
 
         plt.title(column_name_map[column] if column in column_name_map else column)
         plt.ylabel("Frequency")
         
-        plt.legend()
-        
+        plt.legend()   
+
+        plt.savefig(f"figures/numeric_{column}_{save_suffix}.png", dpi=400)
         plt.show()
 
 
-def show_categorical_stats(df, column_name_map):
+def show_categorical_stats(df, column_name_map, save_suffix=""):
 
     print_header("Categorical stats")
     print_df(df.transpose())
+    save_df(df.transpose(), f"tables/categorical_stats_{save_suffix}.tex")
     
     for column in df:
 
@@ -267,8 +265,25 @@ def show_categorical_stats(df, column_name_map):
 
         plt.pie(frequencies, labels=categories)
         plt.title(column_name_map[column] if column in column_name_map else column)
+
+        plt.savefig(f"figures/category_{column}_{save_suffix}.png", dpi=400)
         plt.show()
 
+def save_df(df, path):
+
+    def float_formatter(value, exp_treshold=3):
+        """
+        Print values with a low exponent using decimal notation.
+        Print values with a large exponent using scientific notation.
+        """
+
+        if 10**(-exp_treshold) < abs(value) < 10**exp_treshold:
+            return f"{value:.2f}"
+        else:
+            return f"{value:.2e}"
+    
+    with pd.option_context('display.max_colwidth', None):
+        df.to_latex(path, float_format=lambda value:float_formatter(value))
 
 def print_df(df):
     with pd.option_context('display.max_colwidth', None):
@@ -282,7 +297,7 @@ def print_header(header, char="="):
     print()
 
 
-def show_correlation_matrix(df):
+def show_correlation_matrix(df, save_filename=""):
     
     df_copy = df.copy()
 
@@ -297,20 +312,24 @@ def show_correlation_matrix(df):
     print_header("Correlation matrix")
     print_df(correlation_matrix)
 
-    plt.matshow(correlation_matrix)
+    plt.imshow(correlation_matrix)
     
     plt.title("Correlation matrix")
 
     labels = correlation_matrix.columns.values
     tick_locations = range(len(labels))
-    plt.xticks(tick_locations, labels, rotation=30, horizontalalignment="left")
+    plt.xticks(tick_locations, labels, rotation=30, horizontalalignment="right")
     plt.yticks(tick_locations, labels)
 
     plt.colorbar()
+    plt.tight_layout()
+
+    if save_filename:
+        plt.savefig(f"figures/{save_filename}.png", dpi=400)
 
     plt.show()
 
-def plot_scatterplot(df, index1, index2):
+def plot_scatterplot(df, index1, index2, save_filename=""):
 
     values1 = df[index1].values
     values2 = df[index2].values
@@ -320,9 +339,14 @@ def plot_scatterplot(df, index1, index2):
     plt.xlabel(index1)
     plt.ylabel(index2)
     
+    plt.tight_layout()
+   
+    if save_filename:
+        plt.savefig(f"figures/{save_filename}.png", dpi=400)
+
     plt.show()
 
-def plot_boxplot(df, index1, indices):
+def plot_boxplot(df, index1, indices, save_filename=""):
     """
     Creates a boxplot for multiple columns.
     Index1 has to be a numerical column
@@ -351,29 +375,36 @@ def plot_boxplot(df, index1, indices):
 
     plt.ylabel(index1)
     plt.xticks(rotation=45, ha='right')
-
     plt.tight_layout()
+
+    if save_filename:
+        plt.savefig(f"figures/{save_filename}.png", dpi=400)
+
     plt.show()
 
-def plot_stress_sport_gender(df):
+def plot_stress_sport_gender(df, save_suffix=""):
 
     stress_values = df["Stress level"].values
     sport_values = df["Sport"].values
     gender_values = df["Gender"].values
 
-    cdict = {"female": 'magenta', "male": 'blue', "gender fluid": "yellow"}
+    cdict = {"female": 'C6', "gender fluid": "C10"}
 
 
     # fig, ax = plt.subplots()
     for gender in np.unique(gender_values):
         ix = np.where(gender_values == gender)
         color = cdict[gender] if gender in cdict else None
-        plt.scatter(sport_values[ix], stress_values[ix], label=gender, c=color)
+        plt.scatter(sport_values[ix], stress_values[ix], label=gender, c=color, s=50)
     
     plt.xlabel("Sport")
     plt.ylabel("Stress level")
     
     plt.legend()
+
+    plt.tight_layout()
+
+    plt.savefig(f"figures/stress_sport_gender_{save_suffix}.png", dpi=400)
     plt.show()
 
 
