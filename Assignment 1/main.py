@@ -6,8 +6,10 @@ from data_cleaning import clean_df
 from feature_engineering import run_feature_engineering
 
 from evaluators.category_evaluator import CategoryEvaluator
+from evaluators.numerical_evaluator import NumericalEvaluator
 
 from predictors.knn_predictor import KnnPredictor
+from predictors.linear_regression_predictor import LinearRegressionPredictor
 from predictors.naive_bayes_predictor   import NaiveBayesPredictor
 
 from validators.basic_validator import BasicValidator
@@ -41,8 +43,6 @@ def main():
     # Only keep these columns
     df = df_clean_replace[["Gender", "Stress level", "Sport"]].copy()
 
-    normalize_df(df)
-
     n_rows = len(df.index)
 
     test_fraction = 1/3
@@ -50,17 +50,27 @@ def main():
 
     test_df = df[:n_test_rows]
     other_df = df[n_test_rows:]
+
+    # Numerical prediction
+    predictor = LinearRegressionPredictor("Stress level")
+    evaluator = NumericalEvaluator("Stress level", predictor)
+
+    validator = BasicValidator(other_df, evaluator, predictor)
+    score, std_error = validator.validate()
+    print(f"Numerical error: {score}")
     
+    normalize_df(df)
+
     target = "Gender"
     for k_folds in range(2, 20):
 
-        predictor = NaiveBayesPredictor(target, n_category_bins=5)
-        # predictor = KnnPredictor(target, k=k, n=2)
+        # predictor = NaiveBayesPredictor(target, n_category_bins=5)
+        predictor = KnnPredictor(target, k=5, n=2)
     
         evaluator = CategoryEvaluator(target, predictor)
 
         # validator = BasicValidator(other_df, evaluator, predictor, validate_fraction=0.2)
-        validator = KFoldValidator(df, evaluator, predictor, n_folds=k_folds)
+        validator = KFoldValidator(other_df, evaluator, predictor, n_folds=k_folds)
         score, std_error = validator.validate()
         
         print(f"k={k_folds}, predication accuracy: {score} +- {std_error}")
