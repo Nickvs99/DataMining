@@ -14,6 +14,8 @@ class NumericalEvaluator(Evaluator):
         if not is_numeric_dtype(test_df[self.target]):
             raise Exception(f"{self.target} is not a numerical column")
 
+        self.prediction_values, self.actual_values = [], []
+
         total_error = 0
         for i, entity in test_df.iterrows():
 
@@ -21,7 +23,10 @@ class NumericalEvaluator(Evaluator):
             actual = entity[self.target]
 
             total_error += self.error_func(actual, prediction)
-        
+
+            self.prediction_values.append(prediction)
+            self.actual_values.append(actual)
+
         return total_error
     
     def error_func(self, actual, prediction):

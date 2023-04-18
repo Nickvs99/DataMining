@@ -16,5 +16,9 @@ class BasicValidator(Validator):
         training_df = self.df[n_validation_rows:]
 
         self.predictor.train(training_df)
+        score = self.evaluator.evaluate(validation_df)
 
-        return self.evaluator.evaluate(validation_df), None
+        self.actual_values = self.evaluator.actual_values
+        self.prediction_values = self.evaluator.prediction_values
+
+        return score, None

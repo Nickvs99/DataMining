@@ -14,6 +14,7 @@ class KFoldValidator(Validator):
         super().validate()
         
         scores = []
+        self.actual_values, self.prediction_values = [], []
 
         n_validation_rows = int(len(self.df.index) / self.n_folds)
 
@@ -29,5 +30,8 @@ class KFoldValidator(Validator):
 
             score = self.evaluator.evaluate(validation_df)
             scores.append(score)
+
+            self.actual_values += self.evaluator.actual_values
+            self.prediction_values += self.evaluator.prediction_values
         
         return np.mean(scores), np.std(scores) / np.sqrt(self.n_folds)

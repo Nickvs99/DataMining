@@ -14,3 +14,5 @@ class Evaluator:
         if self.target not in self.test_df.columns:
             raise Exception(f"Invalid target. Possible values are {self.test_df.columns}.")
 
+        self.actual_values = None
+        self.prediction_values = None

@@ -52,16 +52,16 @@ def main():
     test_df = df[:n_test_rows]
     other_df = df[n_test_rows:]
 
-    # Numerical prediction
-    predictor = LinearRegressionPredictor("Stress level")
-    predictor.error_func = errors.MSE
+    # # Numerical prediction
+    # predictor = LinearRegressionPredictor("Stress level")
+    # predictor.error_func = errors.MSE
 
-    evaluator = NumericalEvaluator("Stress level", predictor)
-    evaluator.error_func = errors.MAE
+    # evaluator = NumericalEvaluator("Stress level", predictor)
+    # evaluator.error_func = errors.MAE
 
-    validator = BasicValidator(other_df, evaluator, predictor)
-    score, std_error = validator.validate()
-    print(f"Numerical error: {score}")
+    # validator = BasicValidator(other_df, evaluator, predictor)
+    # score, std_error = validator.validate()
+    # print(f"Numerical error: {score}")
     
     normalize_df(df)
 
@@ -76,8 +76,12 @@ def main():
         # validator = BasicValidator(other_df, evaluator, predictor, validate_fraction=0.2)
         validator = KFoldValidator(other_df, evaluator, predictor, n_folds=k_folds)
         score, std_error = validator.validate()
-        
-        print(f"k={k_folds}, prediction accuracy: {score} +- {std_error}")
+
+        confusion_df = validator.compute_confusion_df()
+
+        print_header(f"Results k={k_folds}")
+        print(confusion_df)  
+        print(f"prediction accuracy: {score} +- {std_error}")
 
 
 def run_df(df, column_name_map, save_suffix=""):
