@@ -1,5 +1,6 @@
 from pandas.api.types import is_numeric_dtype
 
+import errors
 from evaluators.evaluator import Evaluator
 
 class NumericalEvaluator(Evaluator):
@@ -19,9 +20,9 @@ class NumericalEvaluator(Evaluator):
             prediction = self.predictor.predict(entity)
             actual = entity[self.target]
 
-            total_error += self.error_func(prediction, actual)
+            total_error += self.error_func(actual, prediction)
         
         return total_error
     
-    def error_func(self, predication, actual):
-        return (predication - actual) ** 2
+    def error_func(self, actual, prediction):
+        return errors.MSE(actual, prediction)

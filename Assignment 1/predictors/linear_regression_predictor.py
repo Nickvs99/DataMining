@@ -2,6 +2,7 @@ import numpy as np
 from pandas.api.types import is_numeric_dtype
 import scipy.optimize
 
+import errors
 from predictors.numerical_predictor import NumericalPredictor
 
 class LinearRegressionPredictor(NumericalPredictor):
@@ -88,5 +89,5 @@ class LinearRegressionPredictor(NumericalPredictor):
         return total
 
     def error_func(self, actual, prediction):
-        return (actual - prediction) ** 2
+        return errors.MSE(actual, prediction)
     

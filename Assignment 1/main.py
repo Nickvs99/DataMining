@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 from data_cleaning import clean_df
+import errors
 from feature_engineering import run_feature_engineering
 
 from evaluators.category_evaluator import CategoryEvaluator
@@ -53,7 +54,10 @@ def main():
 
     # Numerical prediction
     predictor = LinearRegressionPredictor("Stress level")
+    predictor.error_func = errors.MSE
+
     evaluator = NumericalEvaluator("Stress level", predictor)
+    evaluator.error_func = errors.MAE
 
     validator = BasicValidator(other_df, evaluator, predictor)
     score, std_error = validator.validate()
@@ -73,7 +77,7 @@ def main():
         validator = KFoldValidator(other_df, evaluator, predictor, n_folds=k_folds)
         score, std_error = validator.validate()
         
-        print(f"k={k_folds}, predication accuracy: {score} +- {std_error}")
+        print(f"k={k_folds}, prediction accuracy: {score} +- {std_error}")
 
 
 def run_df(df, column_name_map, save_suffix=""):
