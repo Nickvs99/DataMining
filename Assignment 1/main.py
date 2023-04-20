@@ -93,6 +93,7 @@ def set_df_types(df):
     ]
 
     categorical_columns = [
+        "Program",
         "Machine learning",
         "Information retrieval",
         "Statistics",

@@ -4,11 +4,33 @@ import pandas as pd
 
 def run_feature_engineering(df):
 
+    df = combine_programs(df)
     df = add_experience_column(df)
     df = categorize_bedtime(df)
     df = clean_genders(df)
     return df
 
+def combine_programs(df):
+
+    program_counts = df["Program"].value_counts()
+
+    programs = []
+    for program in df["Program"]:
+
+        if pd.isna(program):
+            count = 0
+        else:
+            count = program_counts[program]
+        
+        if count < 5:
+            program = "Other"
+        
+        programs.append(program)
+
+    df["Program"] = programs
+    df["Program"] = df["Program"].astype("category")
+
+    return df
 
 def add_experience_column(df):
 
@@ -31,7 +53,6 @@ def add_experience_column(df):
 
 def categorize_bedtime(df):
 
-    hours = []
     categories = []
     for index, row in df.iterrows():
 
@@ -53,7 +74,6 @@ def categorize_bedtime(df):
             else:
                 raise Exception(f"{row['Bedtime']} does not fall in any sleep category.")
 
-        hours.append(hour)
         categories.append(category)
 
     df["Sleep level"] = categories
