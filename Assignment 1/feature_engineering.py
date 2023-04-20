@@ -4,9 +4,10 @@ import pandas as pd
 
 def run_feature_engineering(df):
 
-    add_experience_column(df)
-    categorize_bedtime(df)
-    clean_genders(df)
+    df = add_experience_column(df)
+    df = categorize_bedtime(df)
+    df = clean_genders(df)
+    return df
 
 
 def add_experience_column(df):
@@ -26,6 +27,7 @@ def add_experience_column(df):
     df["Experience"] = experience_values
     df["Experience"].apply(pd.to_numeric, errors="coerce")
 
+    return df.drop(columns=["Machine learning", "Information retrieval", "Statistics", "Databases"])
 
 def categorize_bedtime(df):
 
@@ -54,11 +56,10 @@ def categorize_bedtime(df):
         hours.append(hour)
         categories.append(category)
 
-    df["Bedtime - hour"] = hours
     df["Sleep level"] = categories
-    
-    df["Bedtime - hour"].apply(pd.to_numeric, errors="coerce")
     df["Sleep level"] = df["Sleep level"].astype("category")
+    return df.drop(columns=["Bedtime"])
+
 
 def clean_genders(df):
 
@@ -73,3 +74,5 @@ def clean_genders(df):
 
     df["Gender"] = genders
     df["Gender"] = df["Gender"].astype("category")
+
+    return df

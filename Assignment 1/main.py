@@ -32,9 +32,8 @@ def main():
     df_clean_remove = clean_df(df, method="remove")
     df_clean_replace = clean_df(df, method="replace")
     
-    # Run feature engineering on the cleaned versions
-    for dataframe in [df_clean_remove, df_clean_replace]:
-        run_feature_engineering(dataframe)
+    df_clean_remove = run_feature_engineering(df_clean_remove)
+    df_clean_replace = run_feature_engineering(df_clean_replace)
 
     # # Explore data, which gets basic data plots and tables
     # save_suffixs = ["dirty", "remove", "replace"]
