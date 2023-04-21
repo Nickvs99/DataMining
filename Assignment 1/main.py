@@ -20,7 +20,7 @@ from validators.k_fold_validator import KFoldValidator
 
 def main():
     
-    df = pd.read_csv("data.csv", sep=";")
+    df = pd.read_csv("data.csv", sep=",")
     
     column_name_map = update_column_names(df)
     set_df_types(df)
