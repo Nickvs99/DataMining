@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+from column_selection import select_columns
 from data_cleaning import clean_df
 from data_exploration import explore_df
 from df_util import print_header
@@ -25,6 +26,8 @@ def main():
     column_name_map = update_column_names(df)
     set_df_types(df)
 
+    df = df.drop(columns=["Timestamp", "Birthday"])
+
     # Randomize order of rows, https://stackoverflow.com/a/34879805/12132063
     # Use a random_state to have the same order between runs
     df = df.sample(frac=1, random_state=0).reset_index(drop=True)
@@ -41,14 +44,25 @@ def main():
     # for dataframe, save_suffix in zip(dfs, save_suffixs):
     #     explore_df(dataframe, column_name_map, save_suffix=save_suffix)
 
-    # Only keep these columns
-    df = df_clean_replace[["Gender", "Stress level", "Sport"]].copy()
-
+    # Split df into a test and train set
+    df = df_clean_replace.copy()
     n_rows = len(df.index)
 
     test_fraction = 1/3
     n_test_rows = int(n_rows * test_fraction)
 
+    other_df = df[n_test_rows:]
+
+    # Select columns which perform the best with a given validator
+    target = "Gender"
+    predictor = NaiveBayesPredictor(target, n_category_bins=5)
+    evaluator = CategoryEvaluator(target, predictor)
+    validator = KFoldValidator(other_df, evaluator, predictor, n_folds=10) 
+    columns = select_columns(df_clean_replace, validator, mandatory=["Gender", "Stress level"], prefered=["Sport"])
+    
+    print(f"Selected columns: {columns}")
+    df = df[columns].copy()
+    
     test_df = df[:n_test_rows]
     other_df = df[n_test_rows:]
 
@@ -100,7 +114,9 @@ def set_df_types(df):
         "Databases",
         "Gender",
         "ChatGPT",
-        "Stand up"
+        "Stand up",
+        "Good day (#1)",
+        "Good day (#2)",
     ]
 
     # Convert columns to a numeric value, non numeric values are set to NaN
