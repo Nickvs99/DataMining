@@ -76,6 +76,12 @@ class NaiveBayesPredictor(CategoryPredictor):
 
             self.training_df[column] = categories
             self.training_df[column] = self.training_df[column].astype("category")
+
+        
+            # Due to limited data(especially when n_category_bins is high) it is possible that not all
+            # fictional categories are present. However, it might be possible that this category is
+            # present in validation data. Therefore, these categories are manually set
+            self.training_df[column] = self.training_df[column].cat.set_categories([i for i in range(self.n_category_bins)])
             
     def get_category(self, column, value):
 
