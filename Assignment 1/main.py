@@ -6,6 +6,7 @@ from data_cleaning import clean_df
 from data_exploration import explore_df
 from df_util import print_header
 import errors
+from hyper_parameters import run_hyper_parameter_research
 from feature_engineering import run_feature_engineering
 
 from evaluators.category_evaluator import CategoryEvaluator
@@ -53,12 +54,13 @@ def main():
 
     other_df = df[n_test_rows:]
 
-    # Select columns which perform the best with a given validator
-    target = "Gender"
-    predictor = NaiveBayesPredictor(target, n_category_bins=5)
-    evaluator = CategoryEvaluator(target, predictor)
-    validator = KFoldValidator(other_df, evaluator, predictor, n_folds=10) 
-    columns = select_columns(df_clean_replace, validator, mandatory=["Gender", "Stress level"], prefered=["Sport"])
+    # # Select columns which perform the best with a given validator
+    # target = "Gender"
+    # predictor = NaiveBayesPredictor(target, n_category_bins=5)
+    # evaluator = CategoryEvaluator(target, predictor)
+    # validator = KFoldValidator(other_df, evaluator, predictor, n_folds=10) 
+    # columns = select_columns(df_clean_replace, validator, mandatory=["Gender", "Stress level"], prefered=["Sport"])
+    columns = ["Gender", "Stress level", "Sport"]
     
     print(f"Selected columns: {columns}")
     df = df[columns].copy()
@@ -66,36 +68,9 @@ def main():
     test_df = df[:n_test_rows]
     other_df = df[n_test_rows:]
 
-    # # Numerical prediction
-    # predictor = LinearRegressionPredictor("Stress level")
-    # predictor.error_func = errors.MSE
+    run_hyper_parameter_research(other_df, "Gender", "Stress level")
 
-    # evaluator = NumericalEvaluator("Stress level", predictor)
-    # evaluator.error_func = errors.MAE
 
-    # validator = BasicValidator(other_df, evaluator, predictor)
-    # score, std_error = validator.validate()
-    # print(f"Numerical error: {score}")
-    
-    normalize_df(df)
-
-    target = "Gender"
-    for k_folds in range(2, 20):
-
-        # predictor = NaiveBayesPredictor(target, n_category_bins=5)
-        predictor = KnnPredictor(target, k=5, n=2)
-    
-        evaluator = CategoryEvaluator(target, predictor)
-
-        # validator = BasicValidator(other_df, evaluator, predictor, validate_fraction=0.2)
-        validator = KFoldValidator(other_df, evaluator, predictor, n_folds=k_folds)
-        score, std_error = validator.validate()
-
-        confusion_df = validator.compute_confusion_df()
-
-        print_header(f"Results k={k_folds}")
-        print(confusion_df)  
-        print(f"prediction accuracy: {score} +- {std_error}")
 
 def set_df_types(df):
 
@@ -156,20 +131,6 @@ def update_column_names(df):
     df.columns = column_names
 
     return column_name_map
-
-def normalize_df(df):
-    """
-    Normalizes the numerical columns. 
-    Currently, the values are divided by the max value.
-    Another possibility is to also shift the values such that the minvalue is 0
-    """
-
-    numerical_columns = df.select_dtypes(include=np.number)
-    for column in numerical_columns:
-
-        max_value = df[column].max()
-
-        df[column] /= max_value
 
 
 if __name__ == "__main__":
