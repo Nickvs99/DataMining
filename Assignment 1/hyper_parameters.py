@@ -1,14 +1,15 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
-from df_util import normalize_df
+from df_util import normalize_df, print_header, save_df,  print_df
 import errors
 
 from evaluators.category_evaluator import CategoryEvaluator
 from evaluators.numerical_evaluator import NumericalEvaluator
 
 from predictors.knn_predictor import KnnPredictor
-from predictors.linear_regression_predictor import LinearRegressionPredictor
+from predictors.regression_predictor import RegressionPredictor
 from predictors.naive_bayes_predictor   import NaiveBayesPredictor
 
 from validators.basic_validator import BasicValidator
@@ -29,7 +30,7 @@ def run_categorical_research(df, target):
 
 def run_numerical_research(df, target):
 
-    linear_regression_research(df, target)
+    regression_research(df, target)
 
 def k_fold_research(df, target):
 
@@ -58,7 +59,6 @@ def k_fold_research(df, target):
     plt.savefig("figures/hyper_kfold.png")
     plt.show()
 
-
 def naive_bayes_research(df, target):
 
     n_category_values = range(1, 50)
@@ -85,7 +85,6 @@ def naive_bayes_research(df, target):
 
     plt.savefig("figures/hyper_bayes_ncategories.png")
     plt.show()
-
 
 def knn_research(df, target):
 
@@ -145,23 +144,46 @@ def knn_research_n(df, target):
     plt.show()
 
 
-def linear_regression_research(df, target):
+def regression_research(df, target):
     
-    error_functions = [errors.MAE, errors.MSE]
-    labels = ["MAE", "MSE"]
+    regression_functions = [
+        ("wx", lambda x, w:  w * x),
+        ("x/w", lambda x, w: x/w),
+        ("wx^2", lambda x, w: w * x**2),
+        ("wx^0.5", lambda x, w: w * x**0.5),
+        ("w^x", lambda x, w: w**x),
+        ("e^wx", lambda x, w: np.e ** (w* x))
+    ]
 
-    # for error_func, label in zip(error_functions, labels):
+    error_functions = [
+        ("MSE", errors.MSE),
+        ("MAE", errors.MAE),
+    ]
 
-    # Numerical prediction
-    predictor = LinearRegressionPredictor("Stress level")
-    predictor.error_func = errors.MSE
+    results_df = pd.DataFrame(
+        index = [regression_function[0] for regression_function in regression_functions],
+        columns=[error_function[0] for error_function in error_functions]
+    )
 
-    evaluator = NumericalEvaluator("Stress level", predictor)
-    evaluator.error_func = errors.MAE
+    for error_label, error_func in error_functions:
+        for regression_label, regression_func in regression_functions:
 
-    validator = KFoldValidator(df, evaluator, predictor, n_folds=2)
-    score, std_error = validator.validate()
-    print(f"Numerical error: {score}")
+
+            predictor = RegressionPredictor(target)
+            predictor.error_func = error_func
+            predictor.regression_func = regression_func
+
+            evaluator = NumericalEvaluator(target, predictor)
+            evaluator.error_func = error_func
+
+            validator = KFoldValidator(df, evaluator, predictor, n_folds=2)
+            score, std_error = validator.validate()
+
+            results_df.loc[regression_label, error_label] = f"{score:.2f} +- {std_error:.2f}"
+
+    print_header("Regression relsults")
+    print_df(results_df)
+    save_df(results_df, "tables/regression_results.tex")
 
 def plot_between(x, y, yerror):
 

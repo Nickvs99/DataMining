@@ -13,7 +13,7 @@ from evaluators.category_evaluator import CategoryEvaluator
 from evaluators.numerical_evaluator import NumericalEvaluator
 
 from predictors.knn_predictor import KnnPredictor
-from predictors.linear_regression_predictor import LinearRegressionPredictor
+from predictors.regression_predictor import RegressionPredictor
 from predictors.naive_bayes_predictor   import NaiveBayesPredictor
 
 from validators.basic_validator import BasicValidator
@@ -68,7 +68,32 @@ def main():
     other_df = df[n_test_rows:]
     run_hyper_parameter_research(other_df, "Gender", "Stress level")
     
-    # Compute final results
+    # Compute final numerical results
+    error_functions = [
+        ("MSE", errors.MSE),
+        ("MAE", errors.MAE),
+    ]
+    target = "Stress level"
+
+    for error_label, error_func in error_functions:
+        predictor = RegressionPredictor(target)
+        predictor.error_func = error_func
+        predictor.regression_func = lambda x, w: w * x**0.5
+
+        evaluator = NumericalEvaluator(target, predictor)
+        evaluator.error_func = error_func
+
+        validator = BasicValidator(df, evaluator, predictor, validate_fraction=1/3)
+        score, std_error = validator.validate()
+        
+        weight_df = predictor.get_weight_df()
+        print_header(f"Numerical results {error_label}")
+        print(f"{error_label} - Score = {score}")
+        print_df(weight_df)
+        save_df(weight_df, f"tables/regression_weights_{error_label}.tex")
+
+
+    # Compute final categorical results
     target = "Gender"
 
     df = normalize_df(df)

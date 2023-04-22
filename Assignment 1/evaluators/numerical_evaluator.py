@@ -27,7 +27,7 @@ class NumericalEvaluator(Evaluator):
             self.prediction_values.append(prediction)
             self.actual_values.append(actual)
 
-        return total_error
+        return total_error / len(test_df.index)
     
     def error_func(self, actual, prediction):
         return errors.MSE(actual, prediction)

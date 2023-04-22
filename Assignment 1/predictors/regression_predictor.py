@@ -1,11 +1,12 @@
 import numpy as np
+import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import scipy.optimize
 
 import errors
 from predictors.numerical_predictor import NumericalPredictor
 
-class LinearRegressionPredictor(NumericalPredictor):
+class RegressionPredictor(NumericalPredictor):
 
     def __init__(self, target):
         super().__init__(target)
@@ -25,6 +26,8 @@ class LinearRegressionPredictor(NumericalPredictor):
 
     def init_weights(self):
         
+        self.weight_labels = ["Bias"]
+
         # Start with 1 weight, due to the bias term
         n_weights = 1
         for column in self.training_df.columns:
@@ -34,8 +37,13 @@ class LinearRegressionPredictor(NumericalPredictor):
 
             if is_numeric_dtype(self.training_df[column].dtype):
                 n_weights += 1
+                self.weight_labels.append(column)
+
             elif self.training_df[column].dtype.name == 'category':
                 n_weights += len(self.training_df[column].cat.categories)
+
+                for category in self.training_df[column].cat.categories:
+                    self.weight_labels.append(f"{column} - {category}")
             else:
                 raise Exception("Unsopperted column type")
             
@@ -56,18 +64,18 @@ class LinearRegressionPredictor(NumericalPredictor):
                 continue
 
             if is_numeric_dtype(self.training_df[column].dtype):
-                value += weights[weight_index] * entity[column]
-
                 weight_index += 1
+                value += self.regression_func(entity[column], weights[weight_index])
+                
 
             elif self.training_df[column].dtype.name == 'category':
 
                 for category in self.training_df[column].cat.categories:
                     
-                    if category == entity[column]:
-                        value += weights[weight_index]
-
                     weight_index += 1
+                    if category == entity[column]:
+                        value += self.regression_func(1, weights[weight_index])
+
         
         return value
 
@@ -85,9 +93,17 @@ class LinearRegressionPredictor(NumericalPredictor):
         total = 0
         for actual, prediction in zip(actual_values, prediction_values):
             total += self.error_func(actual, prediction)
-        
-        return total
+
+        return total / len(actual_values)
 
     def error_func(self, actual, prediction):
         return errors.MSE(actual, prediction)
     
+    def regression_func(self, x, w):
+        return w * x
+
+    def get_weight_df(self):
+
+        weight_df = pd.DataFrame(list(zip(self.weight_labels, self.weights)), columns=["Label", "Value"])
+
+        return weight_df
