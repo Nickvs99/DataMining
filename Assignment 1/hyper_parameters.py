@@ -37,7 +37,7 @@ def k_fold_research(df, target):
 
     scores, errors = [], []
     for k_fold in k_fold_values:
-        print(k_fold)
+
         predictor = NaiveBayesPredictor(target)
         evaluator = CategoryEvaluator(target, predictor)
 
@@ -48,7 +48,7 @@ def k_fold_research(df, target):
         scores.append(score)
         errors.append(std_error)
 
-    print(f"K fold results: {list(zip(k_fold_values, scores))}")
+    print(f"Kfold - Best number of folds: {k_fold_values[scores.index(max(scores))]}")
     plot_between(k_fold_values, scores, errors)
     
     plt.xlabel("K folds")
@@ -76,7 +76,7 @@ def naive_bayes_research(df, target):
         scores.append(score)
         errors.append(std_error)
 
-    print(f"N categories results: {list(zip(n_category_values, scores))}")
+    print(f"Naive bayes - Best number of categories: {n_category_values[scores.index(max(scores))]}")
     plot_between(n_category_values, scores, errors)
     
     plt.xlabel("N categories")
@@ -98,7 +98,6 @@ def knn_research_k(df, target):
 
     scores, errors = [], []
     for k in k_values:
-        print(k)
 
         predictor = KnnPredictor(target, k=k)
         evaluator = CategoryEvaluator(target, predictor)
@@ -109,7 +108,7 @@ def knn_research_k(df, target):
         scores.append(score)
         errors.append(std_error)
 
-    print(f"Knn k results: {list(zip(k_values, scores))}")
+    print(f"Knn - Best number of neighbours: {k_values[scores.index(max(scores))]}")
     plot_between(k_values, scores, errors)
     
     plt.xlabel("K neighbours")
@@ -125,7 +124,7 @@ def knn_research_n(df, target):
 
     scores, errors = [], []
     for n in n_values:
-        print(n)
+
         predictor = KnnPredictor(target, n=n)
         evaluator = CategoryEvaluator(target, predictor)
         validator = KFoldValidator(df, evaluator, predictor, n_folds=10)
@@ -135,7 +134,7 @@ def knn_research_n(df, target):
         scores.append(score)
         errors.append(std_error)
 
-    print(f"Knn n results: {list(zip(n_values, scores))}")
+    print(f"Knn - Best distance metric: {n_values[scores.index(max(scores))]}")
     plot_between(n_values, scores, errors)
     
     plt.xlabel("Distance metric")

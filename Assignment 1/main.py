@@ -4,7 +4,7 @@ import pandas as pd
 from column_selection import select_columns
 from data_cleaning import clean_df
 from data_exploration import explore_df
-from df_util import print_header
+from df_util import print_header, save_df, print_df, normalize_df
 import errors
 from hyper_parameters import run_hyper_parameter_research
 from feature_engineering import run_feature_engineering
@@ -54,21 +54,44 @@ def main():
 
     other_df = df[n_test_rows:]
 
-    # # Select columns which perform the best with a given validator
+    # Select columns which perform the best with a given validator
     # target = "Gender"
     # predictor = NaiveBayesPredictor(target, n_category_bins=5)
     # evaluator = CategoryEvaluator(target, predictor)
     # validator = KFoldValidator(other_df, evaluator, predictor, n_folds=10) 
-    # columns = select_columns(df_clean_replace, validator, mandatory=["Gender", "Stress level"], prefered=["Sport"])
+    # columns = select_columns(df_clean_replace, validator, mandatory=["Gender", "Stress level"], prefered=["Sport", "Sleep level"])
     columns = ["Gender", "Stress level", "Sport"]
     
     print(f"Selected columns: {columns}")
     df = df[columns].copy()
     
-    test_df = df[:n_test_rows]
     other_df = df[n_test_rows:]
-
     run_hyper_parameter_research(other_df, "Gender", "Stress level")
+    
+    # Compute final results
+    target = "Gender"
+
+    df = normalize_df(df)
+
+    predictor = NaiveBayesPredictor(target, n_category_bins=14)
+    evaluator = CategoryEvaluator(target, predictor)
+    validator = BasicValidator(df, evaluator, predictor, validate_fraction=1/3)
+    score, std_error = validator.validate()
+    confusion_df = validator.compute_confusion_df()
+    print_header("Confusion matrix - Naive bayes")
+    print(f"Score: {score} +- {std_error}")
+    print_df(confusion_df)
+    save_df(confusion_df, "tables/confusion_naive_bayes.tex")
+
+    predictor = KnnPredictor(target, k=9, n=4)
+    evaluator = CategoryEvaluator(target, predictor)
+    validator = BasicValidator(df, evaluator, predictor, validate_fraction=1/3)
+    score, std_error = validator.validate()
+    confusion_df = validator.compute_confusion_df()
+    print_header("Confusion matrix - Knn")
+    print(f"Score: {score} +- {std_error}")
+    print_df(confusion_df)
+    save_df(confusion_df, "tables/confusion_knn.tex")
 
 
 
