@@ -17,6 +17,7 @@ def explore_df(df, column_name_map, save_suffix=""):
 
     plot_scatterplot(df, "Sport", "Stress level", save_filename=f"scatter_sport_stress_{save_suffix}")
     plot_boxplot(df, "Stress level", ["Gender"], save_filename=f"boxplot_stress_gender_{save_suffix}")
+    plot_boxplot(df, "Sport", ["Gender"], save_filename=f"boxplot_sport_gender_{save_suffix}")
 
     plot_stress_sport_gender(df, save_suffix=save_suffix)
 
@@ -35,7 +36,7 @@ def get_basic_df(df):
     def most_frequent_count(series):
         return series.value_counts().max()
 
-    return df.agg(["dtype", "size", n_invalid,  percentage_valid, "nunique", most_frequent_value, most_frequent_count])
+    return df.agg(["dtype", "size", n_invalid, "nunique"])
 
 
 def get_numerical_df(df):
@@ -54,7 +55,7 @@ def get_numerical_df(df):
 
     numerical_columns = df.select_dtypes(include=np.number)
     
-    return numerical_columns.agg(["mean", "std", "min", quantile_1, quantile_25, "median", quantile_75, quantile_99, "max"])
+    return numerical_columns.agg(["mean", "std", "min", quantile_25, "median", quantile_75, "max"])
 
 
 def get_categorical_df(df):
@@ -104,7 +105,7 @@ def show_numerical_stats(df, numerical_df, column_name_map, save_suffix=""):
         values = df[column].values
         
         plt.hist(values, bins=20)
-        plt.axvline(numerical_df[column]["mean"], label="mean", color="orange", linestyle="--")
+        plt.axvline(numerical_df[column]["median"], label="median", color="orange", linestyle="--")
 
         plt.title(column_name_map[column] if column in column_name_map else column)
         plt.ylabel("Frequency")
