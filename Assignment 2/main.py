@@ -3,6 +3,11 @@ import pandas as pd
 import warnings
 
 from data_exploration import explore_df
+from feature_engineering import run_feature_engineering
+
+from evaluators.recommender_evaluator import RecommenderEvaluator
+from predictors.single_attribute_predictor import SingleAttributePredictor
+from validators.basic_validator import BasicValidator
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -12,10 +17,17 @@ def main():
 
     df = set_df_types(df)
 
-    explore_df(df, save_suffix="", show=False)
+    # explore_df(df, save_suffix="", show=False)
 
-    print(df)
-    print(df.dtypes)
+    df = run_feature_engineering(df)
+
+    target = "relevance"
+    predictor = SingleAttributePredictor(target, "prop_review_score")
+    evaluator = RecommenderEvaluator(target, predictor, "srch_id")
+    validator = BasicValidator(df, evaluator, predictor)
+    score, std_error = validator.validate()
+    print(f"{score} +- {std_error}")
+
 
 def set_df_types(df):
 
