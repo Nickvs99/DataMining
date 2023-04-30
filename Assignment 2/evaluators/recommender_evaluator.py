@@ -31,15 +31,7 @@ class RecommenderEvaluator(Evaluator):
 
     def compute_metric(self, group):
 
-        indices, predictions = self.get_predictions(group)
-
-        # Sort indices based on predictions
-        sorted_ = sorted(list(zip(indices, predictions)), key=lambda x: x[1], reverse=True)
-        indices_sorted = [index for index, prediction in sorted_]
-
-        # Get the actual values
-        target_values = [group.loc[index, self.target] for index in indices_sorted]
-
+        target_values = self.get_sorted_attribute_values(group, self.target)
         return self.calc_discounted_cumulative_gain(target_values)
 
     def get_predictions(self, group):
@@ -54,6 +46,22 @@ class RecommenderEvaluator(Evaluator):
 
         return indices, predictions
 
+    def get_sorted_attribute_values(self, group, attribute):
+        """
+        Returns the attribute values after sorting the instances by the target attribute
+        """
+        
+        indices, predictions = self.get_predictions(group)
+
+        # Sort indices based on predictions
+        sorted_ = sorted(list(zip(indices, predictions)), key=lambda x: x[1], reverse=True)
+        indices_sorted = [index for index, prediction in sorted_]
+
+        # Get the actual values
+        attribute_values = [group.loc[index, attribute] for index in indices_sorted]
+        
+        return attribute_values
+
     def calc_discounted_cumulative_gain(self, values):
 
         total = 0
@@ -63,3 +71,21 @@ class RecommenderEvaluator(Evaluator):
 
         return total
     
+    def write_kaggle_prediction(self, test_df, output_path="output.csv"):
+
+        lines = ["srch_id,prop_id"]
+        
+        for srch_id, group in test_df.groupby("srch_id"):
+
+            if len(group.index) == 0:
+                continue
+    
+            prop_ids = self.get_sorted_attribute_values(group, "prop_id")
+
+            for prop_id in prop_ids:
+                lines.append(f"{srch_id},{prop_id}")
+
+        
+        with open(output_path, 'w') as f:
+            for line in lines:
+                f.write(f"{line}\n")

@@ -12,8 +12,10 @@ from validators.basic_validator import BasicValidator
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 def main():
-
-    df = pd.read_csv("data/training_set_100000.csv", sep=",")
+    
+    # TEMP solution. Remove date_time from the df since the full dataset consumes more memory than my laptop has :(
+    usecols = [i for i in range(54) if i != 1] 
+    df = pd.read_csv("data/training_set_100000.csv", sep=",", usecols=usecols)
 
     df = set_df_types(df)
 
@@ -27,6 +29,13 @@ def main():
     validator = BasicValidator(df, evaluator, predictor)
     score, std_error = validator.validate()
     print(f"{score} +- {std_error}")
+
+
+    # Compute prediction for test set, test set has 4 less columns than training set
+    test_df = pd.read_csv("data/test_set.csv", sep=",", usecols=usecols[:-4])
+    predictor.train(df)
+    evaluator = RecommenderEvaluator(target, predictor, "srch_id")
+    evaluator.write_kaggle_prediction(test_df, output_path="data/output.csv")
 
 
 def set_df_types(df):
