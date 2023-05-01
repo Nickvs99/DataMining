@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import warnings
 
-from data_exploration import explore_df
+from data_exploration import explore_df, plot_relevance_correlation
 from feature_engineering import run_feature_engineering
 
 from evaluators.recommender_evaluator import RecommenderEvaluator
@@ -22,6 +22,8 @@ def main():
     # explore_df(df, save_suffix="", show=False)
 
     df = run_feature_engineering(df)
+
+    # plot_relevance_correlation(df, save_suffix="", show=False)    
 
     target = "relevance"
     predictor = SingleAttributePredictor(target, "prop_review_score")

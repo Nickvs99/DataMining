@@ -4,6 +4,9 @@ def run_feature_engineering(df):
 
     df = add_relevance_column(df)
 
+    # Drop attributes which have been used for feature engineering
+    df.drop(columns=["click_bool", "booking_bool"], inplace=True)
+
     return df
 
 def add_relevance_column(df):

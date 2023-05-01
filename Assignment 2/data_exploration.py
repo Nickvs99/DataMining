@@ -1,3 +1,4 @@
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -242,3 +243,48 @@ def plot_boxplot(df, index1, indices, save_suffix=None, show=True, **kwargs):
         plt.show()
     else:
         plt.close()
+
+def plot_relevance_correlation(df, n_bars_per_chart=7, save_suffix=None, show=True, **kwargs):
+
+    df_copy = df.copy()
+
+    # Convert all categorical data to numerical data
+    # https://stackoverflow.com/a/32011969/12132063
+    categorical_columns = df_copy.select_dtypes(['category']).columns
+    df_copy[categorical_columns] = df_copy[categorical_columns].apply(lambda x: x.cat.codes)
+
+    corr = df_copy.corrwith(df_copy["relevance"])
+    corr.drop(labels=["relevance"], inplace=True)
+
+    n_values = len(corr.values)
+
+    min_value = min(corr.values) * 1.05
+    max_value = max(corr.values) * 1.05
+
+    n_plots = math.ceil(n_values / n_bars_per_chart)
+    for i in range(n_plots):
+
+        index_min, index_max = i * n_bars_per_chart, (i + 1) * n_bars_per_chart
+
+        values = corr.values[index_min:index_max]
+        labels = corr.index[index_min:index_max]
+
+        x_tick_locations = range(len(values))
+
+        plt.bar(x_tick_locations, values, width=0.8, tick_label=labels)
+        plt.xticks(x_tick_locations, labels, rotation=30, horizontalalignment="right")
+
+        plt.title("Relevance correlation")
+        plt.ylabel("Correlation")
+        plt.ylim(min_value, max_value)
+
+        plt.tight_layout()
+        
+        if save_suffix is not None:
+            plt.savefig(f"figures/correlation_relevance_{i}{save_suffix}.png", dpi=400)
+
+        if show:
+            plt.show()
+        else:
+            plt.close()
+    
