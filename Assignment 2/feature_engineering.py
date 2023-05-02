@@ -1,6 +1,8 @@
-
+from logger import logger
 
 def run_feature_engineering(df):
+
+    logger.status("Feature engineering")
 
     df = add_relevance_column(df)
 

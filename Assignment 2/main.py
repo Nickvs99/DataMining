@@ -4,6 +4,7 @@ import warnings
 
 from data_exploration import explore_df, plot_relevance_correlation
 from feature_engineering import run_feature_engineering
+from logger import logger
 
 from evaluators.recommender_evaluator import RecommenderEvaluator
 from predictors.single_attribute_predictor import SingleAttributePredictor
@@ -13,31 +14,35 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 def main():
     
+    logger.status("Reading data into dataframe")
+
     # TEMP solution. Remove date_time from the df since the full dataset consumes more memory than my laptop has :(
     usecols = [i for i in range(54) if i != 1] 
     df = pd.read_csv("data/training_set_100000.csv", sep=",", usecols=usecols)
-
     df = set_df_types(df)
 
-    # explore_df(df, save_suffix="", show=False)
+    # explore_df(df, save_suffix=None, show=False)
 
     df = run_feature_engineering(df)
+    df.drop(columns=["position", "gross_bookings_usd"], inplace=True)
 
     # plot_relevance_correlation(df, save_suffix="", show=False)    
 
+    logger.status("Validating single attribute predictor")
     target = "relevance"
-    predictor = SingleAttributePredictor(target, "prop_review_score")
+    predictor = SingleAttributePredictor(target, "prop_location_score2")
+    # predictor = RegressionPredictor(target)
     evaluator = RecommenderEvaluator(target, predictor, "srch_id")
     validator = BasicValidator(df, evaluator, predictor)
     score, std_error = validator.validate()
-    print(f"{score} +- {std_error}")
+    logger.info(f"Score: {score} +- {std_error}")
 
-
-    # Compute prediction for test set, test set has 4 less columns than training set
-    test_df = pd.read_csv("data/test_set.csv", sep=",", usecols=usecols[:-4])
-    predictor.train(df)
-    evaluator = RecommenderEvaluator(target, predictor, "srch_id")
-    evaluator.write_kaggle_prediction(test_df, output_path="data/output.csv")
+    # # Compute prediction for test set, test set has 4 less columns than training set
+    # logger.status("Computing recommendations for test set ")
+    # test_df = pd.read_csv("data/test_set.csv", sep=",", usecols=usecols[:-4])
+    # predictor.train(df)
+    # evaluator = RecommenderEvaluator(target, predictor, "srch_id")
+    # evaluator.write_kaggle_prediction(test_df, output_path="data/output.csv")
 
 
 def set_df_types(df):

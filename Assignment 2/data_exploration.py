@@ -3,9 +3,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from df_util import print_df, print_header, save_df
+from logger import logger
 
 def explore_df(df, **kwargs):
-           
+
+    logger.status("Exploring dataframe")
+         
     basic_df = get_basic_df(df)
     numerical_df = get_numerical_df(df)
     categorical_df = get_categorical_df(df)
