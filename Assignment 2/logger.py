@@ -59,7 +59,7 @@ def addLoggingLevel(levelName, levelNum, methodName=None):
 
 # Add custom levels
 addLoggingLevel("PROGRESS", logging.INFO - 5)
-addLoggingLevel("STATUS", logging.INFO - 5)
+addLoggingLevel("STATUS", logging.INFO - 1)
 
 class CustomFormatter(logging.Formatter):
 
