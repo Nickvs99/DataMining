@@ -184,49 +184,36 @@ class SVDPredictor(NumericalPredictor):
         It's index is the row_attribute
         """
 
-        row_attribute_values_used = []
+        row_attribute_values_used = set()
         
+        attributes = [self.row_attribute] + self.row_similarity_attributes
+       
         log_per_nsteps = int(min(len(self.training_df.index) / 10, 10000))
 
-        similarity_dfs = []
-        for i in range(len(self.training_df.index)):
-            row = self.training_df.iloc[[i]]
-
-            if i % log_per_nsteps == 0:
-                logger.progress(f"Creating similarity df {i/len(self.training_df.index) * 100:.2f}%")
-
-            row_attribute_value = row[self.row_attribute].values[0]
-
-            if row_attribute_value in row_attribute_values_used:
-                continue
-                
-            row_attribute_values_used.append(row_attribute_value)
-
-            attributes = [self.row_attribute] + self.row_similarity_attributes
-            row_subset = row[attributes]
-            similarity_dfs.append(row_subset)
-
-        similarity_df = pd.concat(similarity_dfs, axis=0)
+        # Remove any duplicates and select only the interesting columns
+        similarity_df = self.training_df.drop_duplicates(subset=[self.row_attribute])
+        similarity_df = similarity_df[attributes]
 
         return similarity_df.set_index(self.row_attribute)
 
     def compute_similarity_scores(self, entity):
 
-        similarity_scores = []
-        for row_label in self.row_labels:
-            
-            other_entity = self.similarity_df.loc[row_label].to_frame().transpose()
-
-            distance = self.calc_distance(entity, other_entity)
-
-            similarity_score = -distance
-            similarity_scores.append(similarity_score)
-
-        return similarity_scores
+        similarity_score_series = self.similarity_df.apply(
+            lambda row: self.calc_similarity_score(entity, row),
+            axis=1
+        )
+        
+        return similarity_score_series.values.tolist()
+        
+    def calc_similarity_score(self, entity1, entity2):
+        return -self.calc_distance(entity1, entity2)
 
     def calc_distance(self, entity1, entity2):
         """
         Calculates the distance between two entitys.
+
+        entity1 is a df, since a df stores information about each column
+        entity2 is a series, a df could also have been used, but would require an additional computational step
 
         n is a hyperparameter controlling the distance measure. 
         n = 1 --> manhattan distnace
@@ -243,7 +230,7 @@ class SVDPredictor(NumericalPredictor):
                 continue
 
             value1 = entity1[column].values[0]
-            value2 = entity2[column].values[0]
+            value2 = entity2[column]
 
             # Skip if the training test instace has a nan value
             if pd.isna(value1):

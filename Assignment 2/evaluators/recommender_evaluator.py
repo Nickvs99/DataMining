@@ -44,17 +44,16 @@ class RecommenderEvaluator(Evaluator):
 
     def get_predictions(self, group):
         
-        indices, predictions = [], []
+        predictions = []
         
         for index in group.index:
             row = group.loc[[index]]
 
             prediction = self.predictor.predict(row)
 
-            indices.append(index)
             predictions.append(prediction)
 
-        return indices, predictions
+        return group.index.values, predictions
 
     def get_sorted_attribute_values(self, group, attribute):
         """
