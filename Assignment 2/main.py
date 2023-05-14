@@ -7,7 +7,9 @@ from feature_engineering import run_feature_engineering
 from logger import logger
 
 from evaluators.recommender_evaluator import RecommenderEvaluator
+from predictors.svd_predictor import SVDPredictor
 from predictors.single_attribute_predictor import SingleAttributePredictor
+from predictors.regression_predictor import RegressionPredictor
 from validators.basic_validator import BasicValidator
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -21,16 +23,16 @@ def main():
     df = pd.read_csv("data/training_set_100000.csv", sep=",", usecols=usecols)
     df = set_df_types(df)
 
-    # explore_df(df, save_suffix=None, show=False)
+    # explore_df(df, save_suffix="_datetime", show=False)
 
     df = run_feature_engineering(df)
     df.drop(columns=["position", "gross_bookings_usd"], inplace=True)
 
     # plot_relevance_correlation(df, save_suffix="", show=False)    
-
-    logger.status("Validating single attribute predictor")
+    
     target = "relevance"
-    predictor = SingleAttributePredictor(target, "prop_location_score2")
+    # predictor = SingleAttributePredictor(target, "prop_review_score")
+    predictor = SVDPredictor(target, "srch_id", "prop_id", row_similarity_attributes=["srch_destination_id", "srch_adults_count", "srch_children_count"])
     # predictor = RegressionPredictor(target)
     evaluator = RecommenderEvaluator(target, predictor, "srch_id")
     validator = BasicValidator(df, evaluator, predictor)

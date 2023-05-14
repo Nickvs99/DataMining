@@ -4,6 +4,8 @@ import numpy as np
 from evaluators.evaluator import Evaluator
 from predictors.numerical_predictor import NumericalPredictor
 
+from logger import logger
+
 class RecommenderEvaluator(Evaluator):
 
     def __init__(self, target, predictor, groupby_column):
@@ -16,12 +18,18 @@ class RecommenderEvaluator(Evaluator):
         self.groupby_column = groupby_column
 
     def evaluate(self, test_df):
-
+        
+        logger.status("Evaluating recommender")
+        
         metrics = []
 
-        # Compute the metric over all groups
-        for column_name, group in test_df.groupby(self.groupby_column):
+        groups = test_df.groupby(self.groupby_column)
 
+        # Compute the metric over all groups
+        for i, (column_name, group) in enumerate(groups):
+
+            logger.progress(f"Evaluating groups {i / groups.ngroups * 100:.2f}%")
+            
             if len(group.index) == 0:
                 continue
 
@@ -37,7 +45,9 @@ class RecommenderEvaluator(Evaluator):
     def get_predictions(self, group):
         
         indices, predictions = [], []
-        for index, row in group.iterrows():
+        
+        for index in group.index:
+            row = group.loc[[index]]
 
             prediction = self.predictor.predict(row)
 
