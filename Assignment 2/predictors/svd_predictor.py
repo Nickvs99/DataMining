@@ -68,9 +68,10 @@ class SVDPredictor(NumericalPredictor):
         self.column_labels = np.sort(self.training_df[self.column_attribute].unique()).tolist()
 
         logger.status("Composing u, s, vT matrices")
-        self.u_matrix, self.s_matrix, self.vT_matrix = self.compute_svd()
+        self.u_matrix, s, vT_matrix = self.compute_svd()
+        self.s_matrix = np.diag(s)
+        self.v_matrix = vT_matrix.transpose()
 
-        
     def predict(self, entity):
         
         row_attribute_value = entity[self.row_attribute].values[0]
@@ -94,7 +95,7 @@ class SVDPredictor(NumericalPredictor):
         if column_attribute_index == -1:
             return 0
 
-        prediction = self.u_matrix[max_similarity_index] @ self.s_matrix 
+        prediction = self.u_matrix[max_similarity_index] @ self.s_matrix @ self.v_matrix[column_attribute_index]
 
         return prediction
 
