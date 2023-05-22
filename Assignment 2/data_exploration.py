@@ -51,10 +51,13 @@ def get_numerical_df(df):
     
     def quantile_99(series):
         return series.quantile(0.99)
+    
+    def n_invalid(series):
+        return (series.size - series.count()) / series.size * 100
 
     numerical_columns = df.select_dtypes(include=np.number)
     
-    return numerical_columns.agg(["mean", "std", "min", quantile_25, "median", quantile_75, "max"])
+    return numerical_columns.agg(["mean", "std", "min", "median", "max", n_invalid, "nunique"])
 
 
 def get_categorical_df(df):
@@ -247,7 +250,7 @@ def plot_boxplot(df, index1, indices, save_suffix=None, show=True, **kwargs):
     else:
         plt.close()
 
-def plot_relevance_correlation(df, n_bars_per_chart=7, save_suffix=None, show=True, **kwargs):
+def plot_attribute_correlation(df, attribute, n_bars_per_chart=7, save_suffix=None, show=True, **kwargs):
 
     df_copy = df.copy()
 
@@ -256,8 +259,8 @@ def plot_relevance_correlation(df, n_bars_per_chart=7, save_suffix=None, show=Tr
     categorical_columns = df_copy.select_dtypes(['category']).columns
     df_copy[categorical_columns] = df_copy[categorical_columns].apply(lambda x: x.cat.codes)
 
-    corr = df_copy.corrwith(df_copy["relevance"])
-    corr.drop(labels=["relevance"], inplace=True)
+    corr = df_copy.corrwith(df_copy[attribute])
+    corr.drop(labels=[attribute], inplace=True)
 
     n_values = len(corr.values)
 
@@ -277,14 +280,14 @@ def plot_relevance_correlation(df, n_bars_per_chart=7, save_suffix=None, show=Tr
         plt.bar(x_tick_locations, values, width=0.8, tick_label=labels)
         plt.xticks(x_tick_locations, labels, rotation=30, horizontalalignment="right")
 
-        plt.title("Relevance correlation")
+        plt.title(f"{attribute} correlation")
         plt.ylabel("Correlation")
         plt.ylim(min_value, max_value)
 
         plt.tight_layout()
         
         if save_suffix is not None:
-            plt.savefig(f"figures/correlation_relevance_{i}{save_suffix}.png", dpi=400)
+            plt.savefig(f"figures/correlation_{attribute}_{i}{save_suffix}.png", dpi=400)
 
         if show:
             plt.show()

@@ -5,6 +5,7 @@ def run_feature_engineering(df):
     logger.status("Feature engineering")
 
     df = add_relevance_column(df)
+    df = add_weighted_relevance_column(df)
 
     # Drop attributes which have been used for feature engineering
     df.drop(columns=["click_bool", "booking_bool"], inplace=True)
@@ -20,6 +21,15 @@ def add_relevance_column(df):
 
     return df
 
+def add_weighted_relevance_column(df):
+    
+    df["weighted_relevance"] = df.apply(lambda row: 
+        calc_weighted_relevance(row),
+        axis=1
+    )
+
+    return df 
+
 def calc_relevance(row):
     
     # Use the normalized values, instead of the absolute values
@@ -31,3 +41,7 @@ def calc_relevance(row):
         relevance = 0
 
     return relevance
+
+def calc_weighted_relevance(row):
+
+    return calc_relevance(row) * 2 ** row["position"]
