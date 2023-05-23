@@ -1,14 +1,12 @@
-import math
-import numpy as np
-
 from evaluators.evaluator import Evaluator
 from predictors.numerical_predictor import NumericalPredictor
 
+from recommender_scorer import RecommenderScorer
 from logger import logger
 
 class RecommenderEvaluator(Evaluator):
 
-    def __init__(self, target, predictor, groupby_column):
+    def __init__(self, target, predictor, groupby_column, score_attribute):
         super().__init__(target, predictor)
 
         # Recommender evaluators only work with numerical predictors
@@ -16,40 +14,43 @@ class RecommenderEvaluator(Evaluator):
             raise TypeError("Predictor is not a numerical predictor")
 
         self.groupby_column = groupby_column
+        self.score_attribute = score_attribute
 
-    def evaluate(self, test_df):
+    def evaluate(self, test_df, output_path="output/output.csv"):
         
         logger.status("Evaluating recommender")
         
-        metrics = []
+        self.write_recommendations(test_df, output_path)
 
+        scorer = RecommenderScorer(output_path, test_df, self.score_attribute)
+
+        return scorer.score()
+
+    def write_recommendations(self, test_df, output_path):
+
+        output = [f"{self.groupby_column},{self.target}"]
+        
         groups = test_df.groupby(self.groupby_column)
+        log_per_n_messages = min(groups.ngroups // 10, 1000)
 
-        # Compute the metric over all groups
-        for i, (column_name, group) in enumerate(groups):
+        for i, (group_id, group) in enumerate(groups):
 
-            logger.progress(f"Evaluating groups {i / groups.ngroups * 100:.2f}%")
+            if i % log_per_n_messages == 0:
+                logger.progress(f"Creating recommendations {i / groups.ngroups * 100:.2f}%")
             
             if len(group.index) == 0:
                 continue
+    
+            target_values = self.get_sorted_attribute_values(group, self.target)
 
-            metrics.append(self.compute_metric(group))
+            for target_value in target_values:
+                output.append(f"{group_id},{target_value}")
 
-        return np.mean(metrics)
-
-    def compute_metric(self, group):
-
-        target_values = self.get_sorted_attribute_values(group, self.target)
-        return self.calc_discounted_cumulative_gain(target_values)
-
-    def get_predictions(self, group):
         
-        predictions = group.apply(lambda row:
-            self.predictor.predict(row),
-            axis=1
-        )
+        with open(output_path, 'w') as f:
+            for line in output:
+                f.write(f"{line}\n")
 
-        return group.index.values, predictions.values
 
     def get_sorted_attribute_values(self, group, attribute):
         """
@@ -67,30 +68,12 @@ class RecommenderEvaluator(Evaluator):
         
         return attribute_values
 
-    def calc_discounted_cumulative_gain(self, values):
-
-        total = 0
-        for i, value in enumerate(values):
-
-            total += (2**value - 1) / (math.log2(i + 2))
-
-        return total
-    
-    def write_kaggle_prediction(self, test_df, output_path="output.csv"):
-
-        lines = ["srch_id,prop_id"]
+    def get_predictions(self, group):
         
-        for srch_id, group in test_df.groupby("srch_id"):
+        predictions = group.apply(lambda row:
+            self.predictor.predict(row),
+            axis=1
+        )
 
-            if len(group.index) == 0:
-                continue
+        return group.index.values, predictions.values
     
-            prop_ids = self.get_sorted_attribute_values(group, "prop_id")
-
-            for prop_id in prop_ids:
-                lines.append(f"{srch_id},{prop_id}")
-
-        
-        with open(output_path, 'w') as f:
-            for line in lines:
-                f.write(f"{line}\n")
