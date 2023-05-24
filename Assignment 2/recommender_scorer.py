@@ -16,15 +16,14 @@ class RecommenderScorer:
 
         # Only store the relevant columns
         self.test_df = test_df[[self.groupby_column, self.target_column, self.score_column]]
-
+        self.test_df.set_index(self.target_column, inplace=True)
+        
     def score(self):
 
         metrics = []
 
         groups = self.recommendation_df.groupby(self.groupby_column, observed=True)
         test_groups = self.test_df.groupby(self.groupby_column, observed=True)
-
-        self.score_column_index = self.test_df.columns.get_loc(self.score_column)
 
         # Compute the metric over all groups
         for i, (column_name, group) in enumerate(groups):
@@ -40,7 +39,7 @@ class RecommenderScorer:
         target_indices = {}
         for i, target in enumerate(targets):
             target_indices[target] = i
-        
+
         score_values = group.apply(lambda row:
             self.get_score_attribute(test_group, row, target_indices),
             axis=1
@@ -51,7 +50,7 @@ class RecommenderScorer:
     def get_score_attribute(self, test_group, row, target_indices):
 
         row_target_value = row[self.target_column]
-        return test_group.iat[target_indices[row_target_value], self.score_column_index]
+        return test_group.at[row_target_value, self.score_column]
 
     def calc_discounted_cumulative_gain(self, values):
 
