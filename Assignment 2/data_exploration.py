@@ -53,7 +53,7 @@ def get_numerical_df(df):
         return series.quantile(0.99)
     
     def n_invalid(series):
-        return (series.size - series.count()) / series.size * 100
+        return f"{(series.size - series.count()) / series.size * 100:.2f}%"
 
     numerical_columns = df.select_dtypes(include=np.number)
     
