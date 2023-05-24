@@ -7,6 +7,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import svds
 from scipy.spatial import distance
 
+import feature_engineering as fe
 from predictors.numerical_predictor import NumericalPredictor
 
 from logger import logger
@@ -28,8 +29,8 @@ class SVDPredictor(NumericalPredictor):
     def __init__(self, target, row_attribute, column_attribute,
                  row_similarity_attributes=[],
                  row_similarity_weights=[],
-                 n_svd_dimensions=10,
-                 n_clusters=10):
+                 n_svd_dimensions=4,
+                 n_clusters=5):
         
         super().__init__(target)
 
@@ -67,6 +68,10 @@ class SVDPredictor(NumericalPredictor):
         weighted_similarity_array = similarity_df.to_numpy() * self.row_similarity_weights
         
         # Calculate center of clusters, weighted through the similarity weights
+        if self.n_clusters > len(weighted_similarity_array):
+            logger.warning(f"The number of clusters are too large. The number of clusters are reduced from {self.n_clusters} to {len(weighted_similarity_array)}")
+            self.n_clusters = len(weighted_similarity_array)
+
         logger.status("Calculating cluster centroids")
         self.cluster_centroids, _ = kmeans(weighted_similarity_array, self.n_clusters)
 
@@ -149,7 +154,7 @@ class SVDPredictor(NumericalPredictor):
         
         target_matrix = self.get_target_matrix(cluster_assignings)
 
-        if self.n_svd_dimensions > len(self.cluster_centroids):
+        if self.n_svd_dimensions >= len(self.cluster_centroids):
             logger.warning(f"The number of svd dimensions is larger than the number of clusters. The number of svd dimensions has been reduced from {self.n_svd_dimensions} to {len(self.cluster_centroids) - 1}")
             self.n_svd_dimensions = len(self.cluster_centroids) - 1
 
@@ -223,3 +228,37 @@ class SVDPredictor(NumericalPredictor):
         similarity_scores = -distances
         
         return similarity_scores.tolist()
+
+
+def prepare_df_svd(input_path):
+
+    logger.status("Reading data into dataframe")
+
+    usecols = ["position", "click_bool", "booking_bool", "srch_id", "prop_id", "srch_length_of_stay", "srch_booking_window", "srch_adults_count", "srch_children_count", "srch_room_count"]
+    df = pd.read_csv(input_path, sep=",", usecols=usecols)
+    df = set_df_types(df)
+
+    df = fe.add_relevance_column(df)
+    df = fe.add_weighted_relevance_column(df)
+
+    # Drop training and feature engineered columns
+    df.drop(columns=["position", "gross_bookings_usd", "click_bool", "booking_bool"], inplace=True)
+
+    return df
+
+def set_df_types(df):
+
+    # Most types are automatically set by pandas, however it does not
+    # detect boolean/categorical columns
+
+    categorical_columns = [
+        "srch_id",
+        "prop_id",
+        "random_bool",
+        "click_bool",
+        "booking_bool",
+    ]   
+
+    df[categorical_columns] = df[categorical_columns].astype("category")
+
+    return df   

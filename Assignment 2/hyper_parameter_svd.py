@@ -3,10 +3,8 @@ import numpy as np
 import pandas as pd
 import scipy.optimize
 
-from feature_engineering import run_feature_engineering
-
 from evaluators.recommender_evaluator import RecommenderEvaluator
-from predictors.svd_predictor import SVDPredictor
+from predictors.svd_predictor import SVDPredictor, prepare_df_svd
 from validators.k_fold_validator import KFoldValidator
 
 import logging
@@ -14,21 +12,13 @@ from logger import logger
 
 def main():
 
-    logger.status("Reading data into dataframe")
-    usecols = ["srch_id", "prop_id", "srch_length_of_stay", "srch_booking_window", "srch_adults_count", "srch_children_count", "srch_room_count", "click_bool", "booking_bool", "position"]
-    df = pd.read_csv("data/training_set_100000.csv", sep=",", usecols=usecols)
-    
-    df = set_df_types(df)
-
-    df = run_feature_engineering(df)
+    df = prepare_df_svd("data/training_set.csv")
 
     predictor_target = "weighted_relevance"
     evaluator_target = "relevance"
     row_attribute = "srch_id"
     column_attribute = "prop_id"
     similarity_attributes = ["srch_length_of_stay", "srch_booking_window", "srch_adults_count", "srch_children_count", "srch_room_count"]
-
-    logger.setLevel(logging.INFO)
 
     optimal_weights = optimize_weights_NM(df, predictor_target, evaluator_target, row_attribute, column_attribute, similarity_attributes)
     # optimal_weights = []
@@ -117,7 +107,7 @@ def optimize_weights_NM(df, predictor_target, evaluator_target, row_attribute, c
                             row_similarity_attributes=similarity_attributes,
                             row_similarity_weights=similarity_weights)
         
-        evaluator = RecommenderEvaluator(evaluator_target, predictor, predictor.row_attribute)
+        evaluator = RecommenderEvaluator(column_attribute, predictor, row_attribute, evaluator_target)
         validator = KFoldValidator(df, evaluator, predictor, n_folds=2)
         score, std_error = validator.validate()
 
@@ -126,21 +116,24 @@ def optimize_weights_NM(df, predictor_target, evaluator_target, row_attribute, c
         logger.setLevel(logging.INFO)
 
         return -score
-    
+
+    logger.status("Starting optimization procedure")
+    logger.setLevel(logging.INFO)
+
     initial_weights = get_initial_weights()
 
     validate_svd_recommender(initial_weights)
 
     initial_simplex = get_initial_complex(initial_weights)
 
-    response = scipy.optimize.fmin(validate_svd_recommender, initial_weights, initial_simplex=initial_simplex, full_output=True)
+    response = scipy.optimize.fmin(validate_svd_recommender, initial_weights, initial_simplex=initial_simplex, full_output=True, maxfun=50)
 
     initial_score = validate_svd_recommender(initial_weights)
     optimal_weights, minimum = response[0], response[1]
     
     logger.info(f"Initial score: {-initial_score}. weights: {initial_weights}")
     logger.info(f"Optimized score: {-minimum}. weights: {optimal_weights}")
-    exit()
+
     return optimal_weights
 
 
@@ -165,7 +158,7 @@ def optimize_n_clusters(df, predictor_target, evaluator_target, row_attribute, c
         predictor = SVDPredictor(predictor_target, row_attribute, column_attribute, row_similarity_attributes=similarity_attributes, row_similarity_weights=similarity_weights,
                 n_clusters=n_clusters)
 
-        evaluator = RecommenderEvaluator(evaluator_target, predictor, row_attribute)
+        evaluator = RecommenderEvaluator(column_attribute, predictor, row_attribute, evaluator_target)
         validator = KFoldValidator(df, evaluator, predictor, n_folds=2)
         score, std_error = validator.validate()
 
@@ -209,7 +202,7 @@ def optimize_n_svd_dimensions(df, predictor_target, evaluator_target, row_attrib
                                 n_clusters=n_clusters,
                                 n_svd_dimensions=n_svd_dimensions)
 
-        evaluator = RecommenderEvaluator(evaluator_target, predictor, row_attribute)
+        evaluator = RecommenderEvaluator(column_attribute, predictor, row_attribute, evaluator_target)
         validator = KFoldValidator(df, evaluator, predictor, n_folds=2)
         score, std_error = validator.validate()
 
