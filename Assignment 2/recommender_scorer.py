@@ -34,21 +34,23 @@ class RecommenderScorer:
 
     def compute_metric(self, group, test_group):
 
+        targets = group[self.target_column]
+
+        target_indices = {}
+        for i, target in enumerate(targets):
+            target_indices[target] = i
+        
         score_values = group.apply(lambda row:
-            self.get_score_attribute(test_group, row),
+            self.get_score_attribute(test_group, row, target_indices),
             axis=1
         )
 
         return self.calc_discounted_cumulative_gain(score_values)
 
-    def get_score_attribute(self, test_group, row):
+    def get_score_attribute(self, test_group, row, target_indices):
 
         row_target_value = row[self.target_column]
-
-        matching_row = test_group.loc[test_group[self.target_column] == row[self.target_column]]
-        
-        value = matching_row[self.score_column].values[0]
-        return value
+        return test_group.iloc[target_indices[row_target_value]][self.score_column]
 
     def calc_discounted_cumulative_gain(self, values):
 
