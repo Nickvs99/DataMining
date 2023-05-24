@@ -25,9 +25,9 @@ class KFoldValidator(Validator):
             validation_df = self.df[min_index:max_index]
             training_df = pd.concat([self.df[:min_index], self.df[max_index:]])
 
-            self.predictor.train(training_df, *args, **kwargs)
+            self.predictor.train(training_df)
 
-            score = self.evaluator.evaluate(validation_df, *args, **kwargs)
+            score = self.evaluator.evaluate(validation_df)
             scores.append(score)
         
         return np.mean(scores), np.std(scores) / np.sqrt(self.n_folds)
