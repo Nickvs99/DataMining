@@ -30,16 +30,13 @@ class RecommenderEvaluator(Evaluator):
 
         output = [f"{self.groupby_column},{self.target}"]
         
-        groups = test_df.groupby(self.groupby_column)
-        log_per_n_messages = min(groups.ngroups // 10, 1000)
+        groups = test_df.groupby(self.groupby_column, observed=True)
+        log_per_n_messages = max(min(groups.ngroups // 10, 1000), 1)
 
         for i, (group_id, group) in enumerate(groups):
 
             if i % log_per_n_messages == 0:
                 logger.progress(f"Creating recommendations {i / groups.ngroups * 100:.2f}%")
-            
-            if len(group.index) == 0:
-                continue
     
             target_values = self.get_sorted_attribute_values(group, self.target)
 
