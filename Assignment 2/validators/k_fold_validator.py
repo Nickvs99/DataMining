@@ -10,7 +10,7 @@ class KFoldValidator(Validator):
 
         self.n_folds = n_folds
 
-    def validate(self):
+    def validate(self, *args, **kwargs):
         super().validate()
         
         scores = []
@@ -27,7 +27,7 @@ class KFoldValidator(Validator):
 
             self.predictor.train(training_df)
 
-            score = self.evaluator.evaluate(validation_df)
+            score = self.evaluator.evaluate(validation_df, *args, **kwargs)
             scores.append(score)
         
         return np.mean(scores), np.std(scores) / np.sqrt(self.n_folds)

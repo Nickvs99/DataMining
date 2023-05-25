@@ -1,3 +1,4 @@
+import IO
 from evaluators.evaluator import Evaluator
 from predictors.numerical_predictor import NumericalPredictor
 
@@ -16,10 +17,13 @@ class RecommenderEvaluator(Evaluator):
         self.groupby_column = groupby_column
         self.score_attribute = score_attribute
 
-    def evaluate(self, test_df, output_path="output/output.csv"):
+    def evaluate(self, test_df, output_path="output/output.csv", overwrite_output=True, *args, **kwargs):
         
         logger.status("Evaluating recommender")
-        
+
+        if not overwrite_output:
+            output_path = IO.get_next_path(output_path)
+                
         self.write_recommendations(test_df, output_path)
 
         scorer = RecommenderScorer(output_path, test_df, self.score_attribute)
@@ -61,8 +65,8 @@ class RecommenderEvaluator(Evaluator):
         indices_sorted = [index for index, prediction in sorted_]
 
         # Get the actual values
-        attribute_values = [group.loc[index, attribute] for index in indices_sorted]
-        
+        attribute_values = [group.at[index, attribute] for index in indices_sorted]
+
         return attribute_values
 
     def get_predictions(self, group):

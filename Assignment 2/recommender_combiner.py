@@ -1,7 +1,7 @@
 import math
 import pandas as pd
 
-from feature_engineering import add_relevance_column
+import feature_engineering as fe
 from logger import logger
 from recommender_scorer import RecommenderScorer
 
@@ -38,7 +38,7 @@ class RecommenderCombiner:
 
         return output_df
 
-    def combine(self, output_path="output/output.csv"):
+    def combine(self, output_path="output/output.csv", overwrite_output=True):
         
         output = [f"{self.columns[0]},{self.columns[1]}"]
 
@@ -75,23 +75,27 @@ class RecommenderCombiner:
     def ranking_value(self, ranking, weight_index):
         return 1/math.log2(ranking + 1) * self.weights[weight_index]
 
-def main():
 
-    usecols = ["srch_id", "prop_id", "click_bool", "booking_bool"]
-    df = pd.read_csv("data/training_set_100000.csv", sep=",", usecols=usecols)
-    df = add_relevance_column(df)
-    df.drop(columns=["click_bool", "booking_bool"], inplace=True)
+def main():
 
     output_path = "output/test.csv"
     input_paths = ["output/svd.csv", "output/prop_review_score.csv"]
     combiner = RecommenderCombiner(input_paths)
-    combiner.combine(output_path="output/test.csv")
+    combiner.combine(output_path=output_path)
 
     for path in input_paths + [output_path]:
         scorer = RecommenderScorer(path, df, "relevance")
 
         logger.info(f"Score {path}: {scorer.score()}")
 
+def prepare_df_combiner(input_path):
+    
+    usecols = ["srch_id", "prop_id", "click_bool", "booking_bool"]
+    df = pd.read_csv("data/training_set_100000.csv", sep=",", usecols=usecols)
+    df = fe.add_relevance_column(df)
+    df.drop(columns=["click_bool", "booking_bool"], inplace=True)
+
+    return df
 
 def set_df_types(df):
 
