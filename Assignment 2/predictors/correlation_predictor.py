@@ -11,6 +11,9 @@ class CorrelationPredictor(NumericalPredictor):
     Attempts to predict the target value based on the correlation against other attributes.
     This by itself will not give a good prediction, however it can be used to rank
     the outcomes.
+
+    fill_func is a callable. This function replaces the nan values. The fill_func takes
+    a column series as argument
     """
 
     def __init__(self, target, drop_attributes=[]):
@@ -34,8 +37,13 @@ class CorrelationPredictor(NumericalPredictor):
         self.weight_map = {}
         for column in df.columns:
             self.weight_map[column] = 1 / df[column].max()
-        
+
+        self.nan_replacements = {}
+        for column in df.columns:
+            self.nan_replacements[column] = self.fill_func(df[column])
+
         logger.progress("Computing correlation")
+        
         self.corr = df.corrwith(df[self.target])
         self.corr.drop(labels=[self.target] + self.drop_attributes, inplace=True)
 
@@ -44,13 +52,18 @@ class CorrelationPredictor(NumericalPredictor):
         total = 0
         for key, value in entity.items():
 
-            if pd.isna(value) or key not in self.corr:
+            if key not in self.corr:
                 continue
+
+            if pd.isna(value):
+                value = self.nan_replacements[key]
 
             total += value * self.weight_map[key] * self.corr[key]
 
         return total
 
+    def fill_func(self, column_series):
+        return 0
 
 def prepare_df_correlation(input_path):
     
